@@ -194,6 +194,10 @@
                                 <input type="radio" name="habitType" value="bad" class="text-dashboard-danger focus:ring-dashboard-danger w-4 h-4">
                                 <span class="text-sm font-medium text-dashboard-text">Bad Habit (Quit)</span>
                             </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="habitType" value="medication" class="text-blue-500 focus:ring-blue-500 w-4 h-4">
+                                <span class="text-sm font-medium text-dashboard-text">Medication (Log)</span>
+                            </label>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-4 items-center">
                             <div class="flex-1 w-full relative">
@@ -214,6 +218,24 @@
                                 Initialize Tracker
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion: Medication Tracker -->
+            <div class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden">
+                <button class="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors" onclick="toggleAccordion('medicationAccordion')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <i class="ph ph-pill text-lg"></i>
+                        </div>
+                        <span class="font-semibold text-dashboard-text">Medication Tracker</span>
+                    </div>
+                    <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="medicationAccordion-icon"></i>
+                </button>
+                <div id="medicationAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
+                    <div id="medicationContainer" class="flex flex-col gap-4 py-4">
+                        <!-- Populated via JS -->
                     </div>
                 </div>
             </div>
@@ -280,6 +302,7 @@
         const habitInput = document.getElementById('habitInput');
         const addHabitBtn = document.getElementById('addHabitBtn');
         const analysisContent = document.getElementById('analysisContent');
+        const medicationContainer = document.getElementById('medicationContainer');
 
         function init() {
             // Set Header Date
@@ -465,9 +488,16 @@
 
             habits.push(newHabit);
             
-            // Switch to the newly created habit's category and select it
-            setActiveType(selectedType);
-            activeHabitId = newHabit.id; 
+            if (selectedType === 'medication') {
+                const content = document.getElementById('medicationAccordion-content');
+                if (!content.classList.contains('open')) {
+                    toggleAccordion('medicationAccordion');
+                }
+            } else {
+                // Switch to the newly created habit's category and select it
+                setActiveType(selectedType);
+                activeHabitId = newHabit.id; 
+            }
             
             habitInput.value = '';
             
@@ -480,9 +510,8 @@
             saveData();
         }
 
-        function toggleDay(dateStr) {
-            if (!activeHabitId) return;
-            const habit = habits.find(h => h.id === activeHabitId);
+        function toggleDay(habitId, dateStr) {
+            const habit = habits.find(h => h.id === habitId);
             if (!habit) return;
             
             if (dateStr < habit.createdAt) return; // Cannot edit before creation
@@ -533,6 +562,7 @@
         function renderAll() {
             renderTabs();
             renderActiveHabit();
+            renderMedications();
             renderAnalysis();
         }
 
@@ -710,7 +740,7 @@
                 html += `
                     <div class="flex flex-col items-center gap-1">
                         <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
-                        <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
+                        <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${habit.id}', '${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
                             ${iconHTML}
                         </button>
                     </div>
@@ -745,6 +775,85 @@
             }, 10);
         }
 
+        function renderMedications() {
+            const meds = getHabitsByType('medication');
+            if (meds.length === 0) {
+                medicationContainer.innerHTML = `<div class="text-center text-sm text-dashboard-muted py-6 bg-white rounded-lg border border-slate-200 shadow-sm">No medications tracked. Add one using the "Add New Tracker" menu above.</div>`;
+                return;
+            }
+
+            let html = '';
+            const dates = getPastDates(DAYS_TO_SHOW);
+            const todayStr = formatDate(new Date());
+
+            meds.forEach(med => {
+                html += `
+                <div class="bg-white p-5 rounded-xl border border-dashboard-border shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-dashboard-text">${escapeHTML(med.name)}</h3>
+                        <button onclick="deleteHabit('${med.id}')" class="text-slate-400 hover:text-dashboard-danger hover:bg-red-50 px-2 py-1 rounded-md transition-colors text-sm font-medium flex items-center gap-1">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </div>
+                    <div class="chain-container overflow-x-auto pb-2 -mx-2 px-2" id="grid-${med.id}">
+                        <div class="flex items-center gap-2 min-w-max h-16">
+                `;
+
+                dates.forEach((dateStr) => {
+                    const isCompleted = !!med.history[dateStr];
+                    const isBeforeCreation = dateStr < med.createdAt;
+                    const d = new Date(dateStr);
+                    const dayNum = d.getDate();
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+                    const isToday = dateStr === todayStr;
+
+                    let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative group shadow-sm";
+                    let textClasses = "text-[10px] font-bold z-10";
+                    let iconHTML = '';
+
+                    if (isBeforeCreation) {
+                        btnClasses += " bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed";
+                        textClasses += " text-slate-300";
+                        iconHTML = `<i class="ph ph-minus text-slate-300 z-10"></i>`;
+                    } else {
+                        btnClasses += " cursor-pointer";
+                        if (isCompleted) {
+                            btnClasses += " bg-blue-500 border-blue-500 text-white node-active shadow-sm";
+                            iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
+                        } else {
+                            btnClasses += isToday 
+                                ? " bg-blue-50/50 border-blue-200 hover:border-blue-400 text-blue-700"
+                                : " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500";
+                            iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                        }
+                    }
+
+                    html += `
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
+                            <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${med.id}', '${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
+                                ${iconHTML}
+                            </button>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            medicationContainer.innerHTML = html;
+            
+            setTimeout(() => {
+                meds.forEach(med => {
+                    const grid = document.getElementById(`grid-${med.id}`);
+                    if (grid) grid.scrollLeft = grid.scrollWidth;
+                });
+            }, 10);
+        }
+
         function renderAnalysis() {
             if (habits.length === 0) {
                 analysisContent.innerHTML = `<div class="col-span-full text-center text-sm text-dashboard-muted py-6">Add a tracker to see analysis.</div>`;
@@ -759,6 +868,8 @@
             let totalBadResisted = 0;
 
             habits.forEach(h => {
+                if (h.type === 'medication') return;
+
                 const maxS = calculateMaxStreak(h);
                 
                 if (h.type === 'good') {
