@@ -233,9 +233,21 @@
                     </div>
                     <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="medicationAccordion-icon"></i>
                 </button>
-                <div id="medicationAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
-                    <div id="medicationContainer" class="flex flex-col gap-4 py-4">
-                        <!-- Populated via JS -->
+                <div id="medicationAccordion-content" class="accordion-content border-t border-dashboard-border bg-slate-50/50">
+                    <!-- Medication Tabs Header -->
+                    <div class="border-b border-dashboard-border bg-slate-50 px-2 flex overflow-x-auto no-scrollbar" id="medicationTabsContainer">
+                        <!-- Tabs injected via JS -->
+                    </div>
+                    
+                    <!-- Active Medication Content -->
+                    <div class="p-6 flex flex-col min-h-[250px]" id="activeMedicationContainer">
+                        <div id="emptyMedicationState" class="flex flex-col items-center justify-center py-10 text-center h-full">
+                            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-300">
+                                <i class="ph ph-pill text-3xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-dashboard-text">No Medications Found</h3>
+                            <p class="text-sm text-dashboard-muted mt-1 max-w-sm">Use the 'Add New Tracker' section above to log medications.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -292,6 +304,7 @@
         let habits = [];
         let activeType = 'good'; // 'good' or 'bad'
         let activeHabitId = null;
+        let activeMedicationId = null;
 
         // DOM Elements
         const headerDate = document.getElementById('headerDate');
@@ -302,7 +315,9 @@
         const habitInput = document.getElementById('habitInput');
         const addHabitBtn = document.getElementById('addHabitBtn');
         const analysisContent = document.getElementById('analysisContent');
-        const medicationContainer = document.getElementById('medicationContainer');
+        const medicationTabsContainer = document.getElementById('medicationTabsContainer');
+        const activeMedicationContainer = document.getElementById('activeMedicationContainer');
+        const emptyMedicationState = document.getElementById('emptyMedicationState');
 
         function init() {
             // Set Header Date
@@ -326,6 +341,7 @@
 
             // Set initial state
             updateActiveHabitIdForType();
+            updateActiveMedicationId();
             
             // Open 'Add Habit' accordion by default if no habits exist
             if (habits.length === 0) {
@@ -356,6 +372,13 @@
         
         function getHabitsByType(type) {
             return habits.filter(h => h.type === type);
+        }
+
+        function updateActiveMedicationId() {
+            const meds = getHabitsByType('medication');
+            if (!meds.find(h => h.id === activeMedicationId)) {
+                activeMedicationId = meds.length > 0 ? meds[0].id : null;
+            }
         }
 
         function updateActiveHabitIdForType() {
@@ -489,6 +512,8 @@
             habits.push(newHabit);
             
             if (selectedType === 'medication') {
+                updateActiveMedicationId();
+                activeMedicationId = newHabit.id;
                 const content = document.getElementById('medicationAccordion-content');
                 if (!content.classList.contains('open')) {
                     toggleAccordion('medicationAccordion');
@@ -528,11 +553,17 @@
             activeHabitId = id;
             renderAll();
         }
+        
+        function setActiveMedicationTab(id) {
+            activeMedicationId = id;
+            renderAll();
+        }
 
         function deleteHabit(id) {
             if(confirm("Are you sure you want to permanently delete this tracker?")) {
                 habits = habits.filter(h => h.id !== id);
                 updateActiveHabitIdForType();
+                updateActiveMedicationId();
                 saveData();
             }
         }
@@ -776,81 +807,130 @@
         }
 
         function renderMedications() {
+            renderMedicationTabs();
+            renderActiveMedication();
+        }
+
+        function renderMedicationTabs() {
+            medicationTabsContainer.innerHTML = '';
+            
             const meds = getHabitsByType('medication');
-            if (meds.length === 0) {
-                medicationContainer.innerHTML = `<div class="text-center text-sm text-dashboard-muted py-6 bg-white rounded-lg border border-slate-200 shadow-sm">No medications tracked. Add one using the "Add New Tracker" menu above.</div>`;
+            if (meds.length === 0) return;
+
+            meds.forEach(med => {
+                const isActive = med.id === activeMedicationId;
+                const btn = document.createElement('button');
+                
+                btn.className = `px-5 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg transition-all flex items-center gap-2 ${
+                    isActive 
+                    ? 'bg-white text-dashboard-text shadow-[inset_0_-2px_0_0_#3b82f6] relative z-10' 
+                    : 'text-dashboard-muted hover:text-dashboard-text hover:bg-slate-100'
+                }`;
+                
+                btn.onclick = () => setActiveMedicationTab(med.id);
+                
+                const todayStr = formatDate(new Date());
+                const isCheckedToday = !!med.history[todayStr];
+                
+                const indicatorHTML = isCheckedToday 
+                    ? `<span class="w-2 h-2 rounded-full bg-blue-500"></span>`
+                    : `<span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-300"></span>`;
+
+                btn.innerHTML = `${indicatorHTML} ${escapeHTML(med.name)}`;
+                medicationTabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderActiveMedication() {
+            const meds = getHabitsByType('medication');
+            
+            if (!activeMedicationId || meds.length === 0) {
+                emptyMedicationState.style.display = 'flex';
+                Array.from(activeMedicationContainer.children).forEach(child => {
+                    if (child.id !== 'emptyMedicationState') child.remove();
+                });
                 return;
             }
 
-            let html = '';
+            emptyMedicationState.style.display = 'none';
+            const med = meds.find(h => h.id === activeMedicationId);
+            if (!med) return;
+
             const dates = getPastDates(DAYS_TO_SHOW);
             const todayStr = formatDate(new Date());
 
-            meds.forEach(med => {
+            let html = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h3 class="text-xl font-bold text-dashboard-text">${escapeHTML(med.name)}</h3>
+                    <button onclick="deleteHabit('${med.id}')" class="text-slate-400 hover:text-dashboard-danger hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 self-start sm:self-auto border border-transparent hover:border-red-100">
+                        <i class="ph ph-trash"></i> Delete
+                    </button>
+                </div>
+
+                <div class="mb-2 flex justify-between items-center text-xs font-semibold uppercase tracking-wider">
+                    <span class="text-dashboard-muted">Past ${DAYS_TO_SHOW} Days</span>
+                    <span class="text-slate-400">Created: ${med.createdAt}</span>
+                </div>
+
+                <div class="chain-container overflow-x-auto pb-4 -mx-2 px-2" id="grid-med-${med.id}">
+                    <div class="flex items-center gap-2 min-w-max h-16">
+            `;
+
+            dates.forEach((dateStr) => {
+                const isCompleted = !!med.history[dateStr];
+                const isBeforeCreation = dateStr < med.createdAt;
+                const d = new Date(dateStr);
+                const dayNum = d.getDate();
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+                const isToday = dateStr === todayStr;
+
+                let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative group shadow-sm";
+                let textClasses = "text-[10px] font-bold z-10";
+                let iconHTML = '';
+
+                if (isBeforeCreation) {
+                    btnClasses += " bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed";
+                    textClasses += " text-slate-300";
+                    iconHTML = `<i class="ph ph-minus text-slate-300 z-10"></i>`;
+                } else {
+                    btnClasses += " cursor-pointer";
+                    if (isCompleted) {
+                        btnClasses += " bg-blue-500 border-blue-500 text-white node-active shadow-sm";
+                        iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
+                    } else {
+                        btnClasses += isToday 
+                            ? " bg-blue-50/50 border-blue-200 hover:border-blue-400 text-blue-700"
+                            : " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500";
+                        iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                    }
+                }
+
                 html += `
-                <div class="bg-white p-5 rounded-xl border border-dashboard-border shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-dashboard-text">${escapeHTML(med.name)}</h3>
-                        <button onclick="deleteHabit('${med.id}')" class="text-slate-400 hover:text-dashboard-danger hover:bg-red-50 px-2 py-1 rounded-md transition-colors text-sm font-medium flex items-center gap-1">
-                            <i class="ph ph-trash"></i>
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
+                        <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${med.id}', '${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
+                            ${iconHTML}
                         </button>
                     </div>
-                    <div class="chain-container overflow-x-auto pb-2 -mx-2 px-2" id="grid-${med.id}">
-                        <div class="flex items-center gap-2 min-w-max h-16">
                 `;
-
-                dates.forEach((dateStr) => {
-                    const isCompleted = !!med.history[dateStr];
-                    const isBeforeCreation = dateStr < med.createdAt;
-                    const d = new Date(dateStr);
-                    const dayNum = d.getDate();
-                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
-                    const isToday = dateStr === todayStr;
-
-                    let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative group shadow-sm";
-                    let textClasses = "text-[10px] font-bold z-10";
-                    let iconHTML = '';
-
-                    if (isBeforeCreation) {
-                        btnClasses += " bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed";
-                        textClasses += " text-slate-300";
-                        iconHTML = `<i class="ph ph-minus text-slate-300 z-10"></i>`;
-                    } else {
-                        btnClasses += " cursor-pointer";
-                        if (isCompleted) {
-                            btnClasses += " bg-blue-500 border-blue-500 text-white node-active shadow-sm";
-                            iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
-                        } else {
-                            btnClasses += isToday 
-                                ? " bg-blue-50/50 border-blue-200 hover:border-blue-400 text-blue-700"
-                                : " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500";
-                            iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
-                        }
-                    }
-
-                    html += `
-                        <div class="flex flex-col items-center gap-1">
-                            <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
-                            <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${med.id}', '${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
-                                ${iconHTML}
-                            </button>
-                        </div>
-                    `;
-                });
-
-                html += `
-                        </div>
-                    </div>
-                </div>`;
             });
 
-            medicationContainer.innerHTML = html;
-            
+            html += `
+                    </div>
+                </div>
+            `;
+
+            Array.from(activeMedicationContainer.children).forEach(child => {
+                if (child.id !== 'emptyMedicationState') child.remove();
+            });
+
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            activeMedicationContainer.appendChild(wrapper);
+
             setTimeout(() => {
-                meds.forEach(med => {
-                    const grid = document.getElementById(`grid-${med.id}`);
-                    if (grid) grid.scrollLeft = grid.scrollWidth;
-                });
+                const grid = document.getElementById(`grid-med-${med.id}`);
+                if (grid) grid.scrollLeft = grid.scrollWidth;
             }, 10);
         }
 
