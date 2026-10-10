@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Dashboard</title>
+    <title>TrackerPro Dashboard</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,11 +33,13 @@
                             primary: '#334155', /* Slate 700 */
                             success: '#10b981', /* Emerald 500 */
                             danger: '#ef4444',  /* Red 500 */
+                            warning: '#f59e0b', /* Amber 500 */
                         }
                     },
                     boxShadow: {
                         'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-                        'tab': 'inset 0 -2px 0 0 #10b981'
+                        'tab-good': 'inset 0 -2px 0 0 #10b981',
+                        'tab-bad': 'inset 0 -2px 0 0 #ef4444'
                     }
                 }
             }
@@ -97,9 +99,9 @@
             padding-bottom: 0;
         }
         .accordion-content.open {
-            max-height: 500px; /* Arbitrary large height */
+            max-height: 500px; 
             opacity: 1;
-            padding-top: 1.5rem; /* py-6 equivalent */
+            padding-top: 1.5rem; 
             padding-bottom: 1.5rem;
         }
         
@@ -129,7 +131,7 @@
             <div class="text-right hidden sm:block">
                 <p class="text-sm text-dashboard-muted">Dashboard Status</p>
                 <p class="text-sm font-semibold text-dashboard-success flex items-center justify-end gap-1">
-                    <span class="w-2 h-2 rounded-full bg-dashboard-success animate-pulse"></span> Active
+                    <span class="w-2 h-2 rounded-full bg-dashboard-success animate-pulse"></span> Synchronized
                 </p>
             </div>
         </header>
@@ -137,20 +139,32 @@
         <!-- TOP SECTION: Tabbed Habit Tracker -->
         <section class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden flex flex-col">
             
+            <!-- Habit Type Toggle -->
+            <div class="bg-slate-50 border-b border-dashboard-border p-3 flex justify-center sm:justify-start">
+                <div class="inline-flex bg-slate-200/70 p-1 rounded-lg">
+                    <button id="toggleGoodBtn" onclick="setActiveType('good')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5">
+                        <i class="ph ph-trend-up text-dashboard-success mr-1"></i> Good Habits
+                    </button>
+                    <button id="toggleBadBtn" onclick="setActiveType('bad')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text">
+                        <i class="ph ph-trend-down text-dashboard-danger mr-1"></i> Bad Habits
+                    </button>
+                </div>
+            </div>
+
             <!-- Tabs Header -->
             <div class="border-b border-dashboard-border bg-slate-50 px-2 pt-2 flex overflow-x-auto no-scrollbar" id="tabsContainer">
                 <!-- Tabs injected via JS -->
             </div>
 
             <!-- Active Habit Content -->
-            <div class="p-6 md:p-8 flex flex-col" id="activeHabitContainer">
+            <div class="p-6 md:p-8 flex flex-col min-h-[250px]" id="activeHabitContainer">
                 <!-- Populated via JS -->
-                <div id="emptyTabsState" class="flex flex-col items-center justify-center py-12 text-center">
+                <div id="emptyTabsState" class="flex flex-col items-center justify-center py-10 text-center h-full">
                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
                         <i class="ph ph-target text-3xl"></i>
                     </div>
-                    <h3 class="text-lg font-semibold text-dashboard-text">No Tracking Data</h3>
-                    <p class="text-sm text-dashboard-muted mt-1 max-w-sm">Use the 'Add New Habit' section below to initialize your first tracker.</p>
+                    <h3 class="text-lg font-semibold text-dashboard-text">No Trackers Found</h3>
+                    <p class="text-sm text-dashboard-muted mt-1 max-w-sm">You haven't set up any habits for this category yet. Use the accordion below to add one.</p>
                 </div>
             </div>
         </section>
@@ -165,29 +179,41 @@
                         <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center">
                             <i class="ph ph-plus text-lg"></i>
                         </div>
-                        <span class="font-semibold text-dashboard-text">Add New Habit</span>
+                        <span class="font-semibold text-dashboard-text">Add New Tracker</span>
                     </div>
                     <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="addHabitAccordion-icon"></i>
                 </button>
                 <div id="addHabitAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
-                    <div class="flex flex-col sm:flex-row gap-4 items-center">
-                        <div class="flex-1 w-full relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="ph ph-tag text-slate-400"></i>
-                            </div>
-                            <input 
-                                type="text" 
-                                id="habitInput" 
-                                class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-dashboard-success focus:border-dashboard-success text-sm transition-shadow" 
-                                placeholder="e.g., Read 30 minutes, Morning Workout"
-                            >
+                    <div class="flex flex-col gap-4">
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="habitType" value="good" checked class="text-dashboard-success focus:ring-dashboard-success w-4 h-4">
+                                <span class="text-sm font-medium text-dashboard-text">Good Habit (Build)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="habitType" value="bad" class="text-dashboard-danger focus:ring-dashboard-danger w-4 h-4">
+                                <span class="text-sm font-medium text-dashboard-text">Bad Habit (Quit)</span>
+                            </label>
                         </div>
-                        <button 
-                            id="addHabitBtn"
-                            class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm whitespace-nowrap"
-                        >
-                            Initialize Tracker
-                        </button>
+                        <div class="flex flex-col sm:flex-row gap-4 items-center">
+                            <div class="flex-1 w-full relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="ph ph-tag text-slate-400"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="habitInput" 
+                                    class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-sm transition-shadow" 
+                                    placeholder="e.g., Read 30 mins (Good) or Smoke (Bad)"
+                                >
+                            </div>
+                            <button 
+                                id="addHabitBtn"
+                                class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm whitespace-nowrap"
+                            >
+                                Initialize Tracker
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -204,9 +230,8 @@
                     <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="analysisAccordion-icon"></i>
                 </button>
                 <div id="analysisAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
-                    <div id="analysisContent" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div id="analysisContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Populated via JS -->
-                        <div class="col-span-full text-center text-sm text-dashboard-muted py-4">No data to analyze.</div>
                     </div>
                 </div>
             </div>
@@ -218,7 +243,7 @@
                         <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center">
                             <i class="ph ph-gear text-lg"></i>
                         </div>
-                        <span class="font-semibold text-dashboard-text">Settings</span>
+                        <span class="font-semibold text-dashboard-text">System Settings</span>
                     </div>
                     <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="settingsAccordion-icon"></i>
                 </button>
@@ -226,10 +251,10 @@
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border border-red-100 rounded-lg">
                         <div>
                             <h4 class="text-sm font-semibold text-dashboard-text">Danger Zone</h4>
-                            <p class="text-xs text-dashboard-muted mt-1">Permanently delete all trackers and history.</p>
+                            <p class="text-xs text-dashboard-muted mt-1">Permanently delete all trackers, categories, and historical data.</p>
                         </div>
                         <button onclick="clearAllData()" class="mt-3 sm:mt-0 px-4 py-2 bg-red-50 text-dashboard-danger hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-medium transition-colors border border-red-200">
-                            Clear All Data
+                            Clear Database
                         </button>
                     </div>
                 </div>
@@ -240,9 +265,10 @@
 
     <script>
         // State Management
-        const STORAGE_KEY = 'dashboard_habits_v2';
+        const STORAGE_KEY = 'tracker_pro_v3';
         const DAYS_TO_SHOW = 30;
         let habits = [];
+        let activeType = 'good'; // 'good' or 'bad'
         let activeHabitId = null;
 
         // DOM Elements
@@ -255,7 +281,6 @@
         const addHabitBtn = document.getElementById('addHabitBtn');
         const analysisContent = document.getElementById('analysisContent');
 
-        // Initialize
         function init() {
             // Set Header Date
             const now = new Date();
@@ -270,17 +295,15 @@
                 habits = [];
             }
 
-            // Set initial active tab
-            if (habits.length > 0) {
-                activeHabitId = habits[0].id;
-            }
-
             // Bind Events
             addHabitBtn.addEventListener('click', handleAddHabit);
             habitInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') handleAddHabit();
             });
 
+            // Set initial state
+            updateActiveHabitIdForType();
+            
             // Open 'Add Habit' accordion by default if no habits exist
             if (habits.length === 0) {
                 toggleAccordion('addHabitAccordion');
@@ -289,7 +312,7 @@
             renderAll();
         }
 
-        // Utility Functions
+        // Utilities
         function formatDate(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -307,52 +330,84 @@
             }
             return dates;
         }
+        
+        function getHabitsByType(type) {
+            return habits.filter(h => h.type === type);
+        }
 
-        function calculateStreak(history) {
+        function updateActiveHabitIdForType() {
+            const currentHabits = getHabitsByType(activeType);
+            if (!currentHabits.find(h => h.id === activeHabitId)) {
+                activeHabitId = currentHabits.length > 0 ? currentHabits[0].id : null;
+            }
+        }
+
+        function calculateStreak(habit) {
             let streak = 0;
             const today = new Date();
             let currentDateStr = formatDate(today);
             
-            // Check today, if not done, check yesterday to keep streak active
-            if (!history[currentDateStr]) {
+            // For BAD habits: streak is consecutive UNCHECKED days since creation
+            // For GOOD habits: streak is consecutive CHECKED days
+            const isGood = habit.type === 'good';
+
+            // Check today. If not maintaining streak today, check yesterday.
+            let activeToday = isGood ? habit.history[currentDateStr] : !habit.history[currentDateStr];
+            
+            if (!activeToday) {
                 const yesterday = new Date(today);
                 yesterday.setDate(today.getDate() - 1);
                 currentDateStr = formatDate(yesterday);
-                if (!history[currentDateStr]) return 0;
+                
+                // Check if streak was valid yesterday.
+                // For bad habits, also ensure yesterday is >= createdAt
+                if (currentDateStr < habit.createdAt) return 0;
+                let activeYesterday = isGood ? habit.history[currentDateStr] : !habit.history[currentDateStr];
+                
+                if (!activeYesterday) return 0;
             }
 
             let d = new Date(currentDateStr);
-            while (history[formatDate(d)]) {
-                streak++;
-                d.setDate(d.getDate() - 1);
+            while (true) {
+                const dateStr = formatDate(d);
+                if (dateStr < habit.createdAt) break; // Don't count before habit existed
+                
+                let active = isGood ? habit.history[dateStr] : !habit.history[dateStr];
+                if (active) {
+                    streak++;
+                    d.setDate(d.getDate() - 1);
+                } else {
+                    break;
+                }
             }
             return streak;
         }
 
-        function calculateMaxStreak(history) {
-            // Simple max streak calculation across all time
+        function calculateMaxStreak(habit) {
+            const isGood = habit.type === 'good';
             let max = 0;
             let current = 0;
-            const dates = Object.keys(history).sort();
             
-            if(dates.length === 0) return 0;
+            // Analyze all days from creation to today
+            const start = new Date(habit.createdAt);
+            const end = new Date();
+            
+            // Normalizing dates to prevent time-of-day offset issues
+            start.setHours(0,0,0,0);
+            end.setHours(0,0,0,0);
 
-            let prevDate = new Date(dates[0]);
-            current = 1;
-            max = 1;
-
-            for(let i=1; i<dates.length; i++) {
-                const currDate = new Date(dates[i]);
-                const diffTime = Math.abs(currDate - prevDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            let d = new Date(start);
+            while (d <= end) {
+                const dateStr = formatDate(d);
+                let active = isGood ? habit.history[dateStr] : !habit.history[dateStr];
                 
-                if (diffDays === 1) {
+                if (active) {
                     current++;
-                    if(current > max) max = current;
+                    if (current > max) max = current;
                 } else {
-                    current = 1;
+                    current = 0;
                 }
-                prevDate = currDate;
+                d.setDate(d.getDate() + 1);
             }
             return max;
         }
@@ -368,20 +423,52 @@
             }[tag]));
         }
 
-        // Actions
+        function setActiveType(type) {
+            activeType = type;
+            
+            // Update Toggle UI
+            const goodBtn = document.getElementById('toggleGoodBtn');
+            const badBtn = document.getElementById('toggleBadBtn');
+            
+            if (type === 'good') {
+                goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
+                badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+            } else {
+                badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
+                goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+            }
+
+            updateActiveHabitIdForType();
+            renderAll();
+        }
+
         function handleAddHabit() {
             const name = habitInput.value.trim();
             if (!name) return;
 
+            const typeRadios = document.getElementsByName('habitType');
+            let selectedType = 'good';
+            for (let radio of typeRadios) {
+                if (radio.checked) {
+                    selectedType = radio.value;
+                    break;
+                }
+            }
+
             const newHabit = {
                 id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
                 name: name,
+                type: selectedType,
                 history: {},
-                createdAt: new Date().toISOString()
+                createdAt: formatDate(new Date()) // Store format YYYY-MM-DD
             };
 
             habits.push(newHabit);
-            activeHabitId = newHabit.id; // Switch to new habit automatically
+            
+            // Switch to the newly created habit's category and select it
+            setActiveType(selectedType);
+            activeHabitId = newHabit.id; 
+            
             habitInput.value = '';
             
             // Close add accordion if it's open
@@ -397,6 +484,8 @@
             if (!activeHabitId) return;
             const habit = habits.find(h => h.id === activeHabitId);
             if (!habit) return;
+            
+            if (dateStr < habit.createdAt) return; // Cannot edit before creation
 
             if (habit.history[dateStr]) {
                 delete habit.history[dateStr];
@@ -414,9 +503,7 @@
         function deleteHabit(id) {
             if(confirm("Are you sure you want to permanently delete this tracker?")) {
                 habits = habits.filter(h => h.id !== id);
-                if (activeHabitId === id) {
-                    activeHabitId = habits.length > 0 ? habits[0].id : null;
-                }
+                updateActiveHabitIdForType();
                 saveData();
             }
         }
@@ -426,7 +513,7 @@
                 habits = [];
                 activeHabitId = null;
                 saveData();
-                toggleAccordion('settingsAccordion'); // Close it
+                toggleAccordion('settingsAccordion');
             }
         }
 
@@ -438,16 +525,11 @@
                 content.classList.remove('open');
                 icon.classList.remove('open');
             } else {
-                // Optional: Close others
-                // document.querySelectorAll('.accordion-content').forEach(c => c.classList.remove('open'));
-                // document.querySelectorAll('.accordion-icon').forEach(i => i.classList.remove('open'));
-                
                 content.classList.add('open');
                 icon.classList.add('open');
             }
         }
 
-        // Render Functions
         function renderAll() {
             renderTabs();
             renderActiveHabit();
@@ -457,36 +539,50 @@
         function renderTabs() {
             tabsContainer.innerHTML = '';
             
-            if (habits.length === 0) return;
+            const currentHabits = getHabitsByType(activeType);
+            
+            if (currentHabits.length === 0) return;
 
-            habits.forEach(habit => {
+            currentHabits.forEach(habit => {
                 const isActive = habit.id === activeHabitId;
                 const btn = document.createElement('button');
                 
-                // Styling active vs inactive tabs
+                const shadowClass = activeType === 'good' ? 'shadow-tab-good' : 'shadow-tab-bad';
+                
                 btn.className = `px-5 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg transition-all flex items-center gap-2 ${
                     isActive 
-                    ? 'bg-white text-dashboard-text shadow-tab relative z-10' 
+                    ? `bg-white text-dashboard-text ${shadowClass} relative z-10` 
                     : 'text-dashboard-muted hover:text-dashboard-text hover:bg-slate-100'
                 }`;
                 
                 btn.onclick = () => setActiveTab(habit.id);
                 
-                // Add a small indicator if done today
-                const isDoneToday = !!habit.history[formatDate(new Date())];
-                const indicator = isDoneToday 
-                    ? `<span class="w-2 h-2 rounded-full bg-dashboard-success"></span>`
-                    : `<span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-300"></span>`;
+                // Indicator: For good habits, checking today is good. For bad, checking today is bad.
+                const todayStr = formatDate(new Date());
+                const isCheckedToday = !!habit.history[todayStr];
+                
+                let indicatorHTML = '';
+                if (activeType === 'good') {
+                    indicatorHTML = isCheckedToday 
+                        ? `<span class="w-2 h-2 rounded-full bg-dashboard-success"></span>`
+                        : `<span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-300"></span>`;
+                } else {
+                    // Bad habit: checked is bad (red), unchecked is good (green/gray)
+                    indicatorHTML = isCheckedToday
+                        ? `<span class="w-2 h-2 rounded-full bg-dashboard-danger"></span>`
+                        : `<span class="w-2 h-2 rounded-full bg-dashboard-success"></span>`;
+                }
 
-                btn.innerHTML = `${indicator} ${escapeHTML(habit.name)}`;
+                btn.innerHTML = `${indicatorHTML} ${escapeHTML(habit.name)}`;
                 tabsContainer.appendChild(btn);
             });
         }
 
         function renderActiveHabit() {
-            if (!activeHabitId || habits.length === 0) {
+            const currentHabits = getHabitsByType(activeType);
+            
+            if (!activeHabitId || currentHabits.length === 0) {
                 emptyTabsState.style.display = 'flex';
-                // Remove dynamic content if any
                 Array.from(activeHabitContainer.children).forEach(child => {
                     if (child.id !== 'emptyTabsState') child.remove();
                 });
@@ -494,67 +590,128 @@
             }
 
             emptyTabsState.style.display = 'none';
-            const habit = habits.find(h => h.id === activeHabitId);
+            const habit = currentHabits.find(h => h.id === activeHabitId);
             if (!habit) return;
 
-            const streak = calculateStreak(habit.history);
-            const maxStreak = calculateMaxStreak(habit.history);
+            const streak = calculateStreak(habit);
+            const maxStreak = calculateMaxStreak(habit);
             const dates = getPastDates(DAYS_TO_SHOW);
             const todayStr = formatDate(new Date());
+            const isGood = habit.type === 'good';
 
-            // Create Header for Active Habit
+            const streakColor = streak > 0 
+                ? (isGood ? 'text-dashboard-success' : 'text-dashboard-success') // Both use green to signify a good streak
+                : 'text-dashboard-muted';
+                
+            const headerIcon = isGood ? 'ph-trend-up' : 'ph-shield-check';
+
             let html = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-dashboard-text">${escapeHTML(habit.name)}</h2>
                         <div class="flex items-center gap-4 mt-2">
-                            <span class="inline-flex items-center gap-1.5 text-sm font-medium ${streak > 0 ? 'text-dashboard-success' : 'text-dashboard-muted'} bg-slate-50 px-2.5 py-1 rounded border border-slate-200">
-                                <i class="${streak > 0 ? 'ph-fill ph-fire' : 'ph ph-fire'}"></i>
+                            <span class="inline-flex items-center gap-1.5 text-sm font-medium ${streakColor} bg-slate-50 px-2.5 py-1 rounded border border-slate-200 shadow-sm">
+                                <i class="${streak > 0 ? 'ph-fill' : 'ph'} ${headerIcon}"></i>
                                 Current Streak: ${streak}
                             </span>
-                            <span class="text-xs text-dashboard-muted">Record: ${maxStreak}</span>
+                            <span class="text-xs text-dashboard-muted font-medium">Best: ${maxStreak}</span>
                         </div>
                     </div>
                     <button onclick="deleteHabit('${habit.id}')" class="text-slate-400 hover:text-dashboard-danger hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 self-start sm:self-auto border border-transparent hover:border-red-100">
-                        <i class="ph ph-trash"></i> Delete Tab
+                        <i class="ph ph-trash"></i> Delete
                     </button>
                 </div>
 
-                <div class="mb-2 text-xs font-semibold text-dashboard-muted uppercase tracking-wider">Past 30 Days</div>
+                <div class="mb-2 flex justify-between items-center text-xs font-semibold uppercase tracking-wider">
+                    <span class="text-dashboard-muted">Past ${DAYS_TO_SHOW} Days</span>
+                    <span class="text-slate-400">Created: ${habit.createdAt}</span>
+                </div>
+                
                 <div class="chain-container overflow-x-auto pb-4 -mx-2 px-2" id="gridContainer">
                     <div class="flex items-center gap-2 min-w-max h-16">
             `;
 
-            // Generate Grid Nodes
-            dates.forEach(dateStr => {
-                const isCompleted = !!habit.history[dateStr];
+            dates.forEach((dateStr, index) => {
+                const isCompleted = !!habit.history[dateStr]; // true if clicked
                 const isToday = dateStr === todayStr;
+                const isBeforeCreation = dateStr < habit.createdAt;
+                
                 const d = new Date(dateStr);
                 const dayNum = d.getDate();
-                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0); // M, T, W...
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
 
-                let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative cursor-pointer group shadow-sm";
+                let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative group shadow-sm";
                 let textClasses = "text-[10px] font-bold z-10";
+                let iconHTML = '';
                 
-                if (isCompleted) {
-                    btnClasses += " bg-dashboard-success border-dashboard-success text-white node-active";
-                    textClasses += " text-white";
-                } else if (isToday) {
-                    btnClasses += " bg-emerald-50 border-emerald-200 hover:border-dashboard-success";
-                    textClasses += " text-dashboard-primary";
+                if (isBeforeCreation) {
+                    btnClasses += " bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed";
+                    textClasses += " text-slate-300";
+                    iconHTML = `<i class="ph ph-minus text-slate-300 z-10"></i>`;
                 } else {
-                    btnClasses += " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50";
-                    textClasses += " text-slate-500";
+                    btnClasses += " cursor-pointer";
+                    
+                    // Logic for adjacent days to check for consecutive states
+                    const prevDate = dates[index - 1];
+                    const nextDate = dates[index + 1];
+                    
+                    if (isGood) {
+                        if (isCompleted) {
+                            // Good Habit: Success
+                            btnClasses += " bg-dashboard-success border-dashboard-success text-white node-active shadow-sm";
+                            iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
+                        } else {
+                            // Good Habit: Missed
+                            let isConsecutiveMiss = false;
+                            if ((prevDate && prevDate >= habit.createdAt && !habit.history[prevDate]) || 
+                                (nextDate && nextDate >= habit.createdAt && !habit.history[nextDate])) {
+                                isConsecutiveMiss = true;
+                            }
+                            
+                            if (isConsecutiveMiss) {
+                                // Red Warning for breaking chain > 1 day
+                                btnClasses += " bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400";
+                                textClasses += " text-red-600";
+                                iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                            } else {
+                                // Normal single miss
+                                btnClasses += isToday 
+                                    ? " bg-emerald-50/50 border-emerald-200 hover:border-dashboard-success text-dashboard-primary"
+                                    : " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500";
+                                iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                            }
+                        }
+                    } else {
+                        // Bad Habit Logic
+                        if (isCompleted) {
+                            // Bad Habit: Failed (User did the bad habit)
+                            let isConsecutiveFail = false;
+                            if ((prevDate && prevDate >= habit.createdAt && habit.history[prevDate]) || 
+                                (nextDate && nextDate >= habit.createdAt && habit.history[nextDate])) {
+                                isConsecutiveFail = true;
+                            }
+
+                            if (isConsecutiveFail) {
+                                btnClasses += " bg-dashboard-danger border-dashboard-danger text-white node-active";
+                                iconHTML = `<i class="ph-bold ph-x text-base z-10 text-white"></i>`;
+                            } else {
+                                // Warning single failure
+                                btnClasses += " bg-orange-100 border-dashboard-warning text-dashboard-warning node-active";
+                                iconHTML = `<i class="ph-bold ph-x text-base z-10 text-dashboard-warning"></i>`;
+                            }
+                        } else {
+                            // Bad Habit: Success (Resisted)
+                            btnClasses += " bg-emerald-50/40 border-emerald-100 hover:border-emerald-300 text-emerald-700";
+                            iconHTML = `<span class="${textClasses} text-emerald-700">${dayNum}</span>`;
+                        }
+                    }
                 }
 
                 html += `
                     <div class="flex flex-col items-center gap-1">
                         <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
-                        <button class="${btnClasses}" onclick="toggleDay('${dateStr}')" title="${d.toLocaleDateString()}">
-                            ${isCompleted 
-                                ? `<i class="ph-bold ph-check text-base z-10"></i>` 
-                                : `<span class="${textClasses}">${dayNum}</span>`
-                            }
+                        <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
+                            ${iconHTML}
                         </button>
                     </div>
                 `;
@@ -563,19 +720,25 @@
             html += `
                     </div>
                 </div>
+                
+                <div class="mt-2 text-xs flex gap-4 text-dashboard-muted">
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-dashboard-success block"></span> Success</div>
+                    ${isGood 
+                        ? `<div class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-red-300 bg-red-50 block"></span> 2+ Days Skipped</div>`
+                        : `<div class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-dashboard-danger block"></span> 2+ Days Failed</div>
+                           <div class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-dashboard-warning bg-orange-100 block"></span> 1 Day Failed</div>`
+                    }
+                </div>
             `;
 
-            // Clean previous content except empty state
             Array.from(activeHabitContainer.children).forEach(child => {
                 if (child.id !== 'emptyTabsState') child.remove();
             });
 
-            // Append new content
             const wrapper = document.createElement('div');
             wrapper.innerHTML = html;
             activeHabitContainer.appendChild(wrapper);
 
-            // Scroll to the right (most recent day)
             setTimeout(() => {
                 const grid = document.getElementById('gridContainer');
                 if (grid) grid.scrollLeft = grid.scrollWidth;
@@ -588,50 +751,58 @@
                 return;
             }
 
-            let totalHabits = habits.length;
-            let totalCompletions = 0;
-            let highestEverStreak = 0;
-            let activeStreaks = 0;
+            let goodHabitsCount = 0;
+            let badHabitsCount = 0;
+            let highestGoodStreak = 0;
+            let highestBadStreak = 0;
+            let totalGoodCompletions = 0;
+            let totalBadResisted = 0;
 
             habits.forEach(h => {
-                // Count completions
-                const completions = Object.keys(h.history).length;
-                totalCompletions += completions;
-
-                // Max streak
-                const maxS = calculateMaxStreak(h.history);
-                if (maxS > highestEverStreak) highestEverStreak = maxS;
-
-                // Active streaks
-                if (calculateStreak(h.history) > 0) activeStreaks++;
+                const maxS = calculateMaxStreak(h);
+                
+                if (h.type === 'good') {
+                    goodHabitsCount++;
+                    totalGoodCompletions += Object.keys(h.history).length;
+                    if (maxS > highestGoodStreak) highestGoodStreak = maxS;
+                } else {
+                    badHabitsCount++;
+                    // For bad habits, resisted days = total days since creation minus failed days
+                    const start = new Date(h.createdAt);
+                    const end = new Date();
+                    start.setHours(0,0,0,0);
+                    end.setHours(0,0,0,0);
+                    const totalDays = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1);
+                    const failedDays = Object.keys(h.history).length;
+                    totalBadResisted += (totalDays - failedDays);
+                    
+                    if (maxS > highestBadStreak) highestBadStreak = maxS;
+                }
             });
 
             analysisContent.innerHTML = `
                 <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
-                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-2">
-                        <i class="ph ph-check-circle text-xl"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-dashboard-muted uppercase tracking-wider mb-1">Total Completions</span>
-                    <span class="text-2xl font-bold text-dashboard-text">${totalCompletions}</span>
-                    <span class="text-[10px] text-dashboard-muted mt-1">Across all trackers</span>
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Good Habits Built</span>
+                    <span class="text-2xl font-bold text-dashboard-text">${totalGoodCompletions}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Total Days Completed</span>
                 </div>
                 
                 <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
-                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-dashboard-success flex items-center justify-center mb-2">
-                        <i class="ph ph-fire text-xl"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-dashboard-muted uppercase tracking-wider mb-1">Active Streaks</span>
-                    <span class="text-2xl font-bold text-dashboard-text">${activeStreaks} <span class="text-sm font-medium text-slate-400">/ ${totalHabits}</span></span>
-                    <span class="text-[10px] text-dashboard-muted mt-1">Habits maintained today/yesterday</span>
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Bad Habits Resisted</span>
+                    <span class="text-2xl font-bold text-dashboard-text">${totalBadResisted}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Total Days Resisted</span>
                 </div>
                 
                 <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
-                    <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mb-2">
-                        <i class="ph ph-trophy text-xl"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-dashboard-muted uppercase tracking-wider mb-1">All-Time Best Streak</span>
-                    <span class="text-2xl font-bold text-dashboard-text">${highestEverStreak} <span class="text-sm font-medium text-slate-400">days</span></span>
-                    <span class="text-[10px] text-dashboard-muted mt-1">Your longest chain</span>
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Best Good Streak</span>
+                    <span class="text-2xl font-bold text-dashboard-success">${highestGoodStreak}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Record across good habits</span>
+                </div>
+                
+                <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Best Quit Streak</span>
+                    <span class="text-2xl font-bold text-dashboard-success">${highestBadStreak}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Record across bad habits</span>
                 </div>
             `;
         }
