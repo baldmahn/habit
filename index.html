@@ -25,15 +25,15 @@
                     },
                     colors: {
                         dashboard: {
-                            bg: '#f8fafc',      /* Slate 50 */
+                            bg: '#f8fafc',
                             card: '#ffffff',
-                            border: '#e2e8f0',  /* Slate 200 */
-                            text: '#0f172a',    /* Slate 900 */
-                            muted: '#64748b',   /* Slate 500 */
-                            primary: '#334155', /* Slate 700 */
-                            success: '#10b981', /* Emerald 500 */
-                            danger: '#ef4444',  /* Red 500 */
-                            warning: '#f59e0b', /* Amber 500 */
+                            border: '#e2e8f0',
+                            text: '#0f172a',
+                            muted: '#64748b',
+                            primary: '#334155',
+                            success: '#10b981',
+                            danger: '#ef4444',
+                            warning: '#f59e0b',
                         }
                     },
                     boxShadow: {
@@ -54,7 +54,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Scrollbar for the horizontal chain */
         .chain-container::-webkit-scrollbar {
             height: 6px;
         }
@@ -70,7 +69,6 @@
             background-color: theme('colors.slate.400');
         }
 
-        /* Tabs Scrollbar hide */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -79,7 +77,6 @@
             scrollbar-width: none;
         }
 
-        /* Custom Scrollbar for Gratitude History */
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
         }
@@ -91,7 +88,6 @@
             border-radius: 4px;
         }
 
-        /* Node animation */
         @keyframes pop {
             0% { transform: scale(0.90); opacity: 0.8; }
             50% { transform: scale(1.1); opacity: 1; }
@@ -101,7 +97,6 @@
             animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        /* Accordion transition */
         .accordion-content {
             transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out;
             max-height: 0;
@@ -115,6 +110,7 @@
             opacity: 1;
             padding-top: 1.5rem; 
             padding-bottom: 1.5rem;
+            overflow-y: auto;
         }
         
         .accordion-icon {
@@ -151,7 +147,6 @@
         <!-- TOP SECTION: Tabbed Habit Tracker -->
         <section class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden flex flex-col">
             
-            <!-- Habit Type Toggle -->
             <div class="bg-slate-50 border-b border-dashboard-border p-3 flex justify-center sm:justify-start">
                 <div class="inline-flex bg-slate-200/70 p-1 rounded-lg">
                     <button id="toggleGoodBtn" onclick="setActiveType('good')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5">
@@ -163,12 +158,10 @@
                 </div>
             </div>
 
-            <!-- Tabs Header -->
             <div class="border-b border-dashboard-border bg-slate-50 px-2 pt-2 flex overflow-x-auto no-scrollbar" id="tabsContainer">
                 <!-- Tabs injected via JS -->
             </div>
 
-            <!-- Active Habit Content -->
             <div class="p-6 md:p-8 flex flex-col min-h-[250px]" id="activeHabitContainer">
                 <!-- Populated via JS -->
                 <div id="emptyTabsState" class="flex flex-col items-center justify-center py-10 text-center h-full">
@@ -273,12 +266,10 @@
                     <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="medicationAccordion-icon"></i>
                 </button>
                 <div id="medicationAccordion-content" class="accordion-content border-t border-dashboard-border bg-slate-50/50">
-                    <!-- Medication Tabs Header -->
                     <div class="border-b border-dashboard-border bg-slate-50 px-2 flex overflow-x-auto no-scrollbar" id="medicationTabsContainer">
                         <!-- Tabs injected via JS -->
                     </div>
                     
-                    <!-- Active Medication Content -->
                     <div class="p-6 flex flex-col min-h-[250px]" id="activeMedicationContainer">
                         <div id="emptyMedicationState" class="flex flex-col items-center justify-center py-10 text-center h-full">
                             <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-300">
@@ -352,7 +343,6 @@
         const tabsContainer = document.getElementById('tabsContainer');
         const activeHabitContainer = document.getElementById('activeHabitContainer');
         const emptyTabsState = document.getElementById('emptyTabsState');
-        
         const habitInput = document.getElementById('habitInput');
         const addHabitBtn = document.getElementById('addHabitBtn');
         const analysisContent = document.getElementById('analysisContent');
@@ -361,40 +351,50 @@
         const emptyMedicationState = document.getElementById('emptyMedicationState');
 
         function init() {
-            // Set Header Date
-            const now = new Date();
-            headerDate.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
-            // Load Data
             try {
+                // Set Header Date
+                const now = new Date();
+                headerDate.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+                // Safely Load Data with strict null fallbacks
                 const data = localStorage.getItem(STORAGE_KEY);
-                if (data) habits = JSON.parse(data);
-                
+                if (data && data !== "undefined" && data !== "null") {
+                    habits = JSON.parse(data) || [];
+                }
+
                 const gratData = localStorage.getItem(GRATITUDE_KEY);
-                if (gratData) gratitudeLog = JSON.parse(gratData);
-            } catch (e) {
-                console.error("Failed to load data", e);
+                if (gratData && gratData !== "undefined" && gratData !== "null") {
+                    gratitudeLog = JSON.parse(gratData) || {};
+                }
+
+                // Bind Events
+                if (addHabitBtn) {
+                    addHabitBtn.addEventListener('click', handleAddHabit);
+                }
+                if (habitInput) {
+                    habitInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') handleAddHabit();
+                    });
+                }
+
+                // Set initial state
+                updateActiveHabitIdForType();
+                updateActiveMedicationId();
+                
+                // Open 'Add Habit' accordion by default if no habits exist
+                if (habits.length === 0) {
+                    toggleAccordion('addHabitAccordion');
+                }
+
+                renderAll();
+                renderGratitudeHistory();
+            } catch (err) {
+                console.error("Initialization error:", err);
+                // Fallback to empty state if save data is completely corrupted
                 habits = [];
                 gratitudeLog = {};
+                renderAll();
             }
-
-            // Bind Events
-            addHabitBtn.addEventListener('click', handleAddHabit);
-            habitInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleAddHabit();
-            });
-
-            // Set initial state
-            updateActiveHabitIdForType();
-            updateActiveMedicationId();
-            
-            // Open 'Add Habit' accordion by default if no habits exist
-            if (habits.length === 0) {
-                toggleAccordion('addHabitAccordion');
-            }
-
-            renderAll();
-            renderGratitudeHistory();
         }
 
         // Utilities
@@ -440,7 +440,9 @@
             let currentDateStr = formatDate(today);
             
             const isGood = habit.type === 'good';
-            let activeToday = isGood ? habit.history[currentDateStr] : !habit.history[currentDateStr];
+            const history = habit.history || {};
+            
+            let activeToday = isGood ? history[currentDateStr] : !history[currentDateStr];
             
             if (!activeToday) {
                 const yesterday = new Date(today);
@@ -448,7 +450,7 @@
                 currentDateStr = formatDate(yesterday);
                 
                 if (currentDateStr < habit.createdAt) return 0;
-                let activeYesterday = isGood ? habit.history[currentDateStr] : !habit.history[currentDateStr];
+                let activeYesterday = isGood ? history[currentDateStr] : !history[currentDateStr];
                 
                 if (!activeYesterday) return 0;
             }
@@ -458,7 +460,7 @@
                 const dateStr = formatDate(d);
                 if (dateStr < habit.createdAt) break; 
                 
-                let active = isGood ? habit.history[dateStr] : !habit.history[dateStr];
+                let active = isGood ? history[dateStr] : !history[dateStr];
                 if (active) {
                     streak++;
                     d.setDate(d.getDate() - 1);
@@ -473,6 +475,7 @@
             const isGood = habit.type === 'good';
             let max = 0;
             let current = 0;
+            const history = habit.history || {};
             
             const start = new Date(habit.createdAt);
             const end = new Date();
@@ -482,7 +485,7 @@
             let d = new Date(start);
             while (d <= end) {
                 const dateStr = formatDate(d);
-                let active = isGood ? habit.history[dateStr] : !habit.history[dateStr];
+                let active = isGood ? history[dateStr] : !history[dateStr];
                 
                 if (active) {
                     current++;
@@ -501,6 +504,7 @@
         }
 
         function escapeHTML(str) {
+            if (!str) return '';
             return str.replace(/[&<>'"]/g, tag => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
             }[tag]));
@@ -509,16 +513,17 @@
         function setActiveType(type) {
             activeType = type;
             
-            // Update Toggle UI
             const goodBtn = document.getElementById('toggleGoodBtn');
             const badBtn = document.getElementById('toggleBadBtn');
             
-            if (type === 'good') {
-                goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
-                badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
-            } else {
-                badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
-                goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+            if (goodBtn && badBtn) {
+                if (type === 'good') {
+                    goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
+                    badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+                } else {
+                    badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
+                    goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+                }
             }
 
             updateActiveHabitIdForType();
@@ -526,6 +531,7 @@
         }
 
         function handleAddHabit() {
+            if (!habitInput) return;
             const name = habitInput.value.trim();
             if (!name) return;
 
@@ -538,8 +544,13 @@
                 }
             }
 
+            // Safe ID generation
+            const newId = (window.crypto && window.crypto.randomUUID) 
+                ? window.crypto.randomUUID() 
+                : Date.now().toString() + Math.random().toString(36).substring(2, 9);
+
             const newHabit = {
-                id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+                id: newId,
                 name: name,
                 type: selectedType,
                 history: {},
@@ -552,7 +563,7 @@
                 updateActiveMedicationId();
                 activeMedicationId = newHabit.id;
                 const content = document.getElementById('medicationAccordion-content');
-                if (!content.classList.contains('open')) {
+                if (content && !content.classList.contains('open')) {
                     toggleAccordion('medicationAccordion');
                 }
             } else {
@@ -563,7 +574,7 @@
             habitInput.value = '';
             
             const content = document.getElementById('addHabitAccordion-content');
-            if (content.classList.contains('open')) {
+            if (content && content.classList.contains('open')) {
                 toggleAccordion('addHabitAccordion');
             }
 
@@ -575,6 +586,7 @@
             if (!habit) return;
             
             if (dateStr < habit.createdAt) return;
+            if (!habit.history) habit.history = {};
 
             if (habit.history[dateStr]) {
                 delete habit.history[dateStr];
@@ -609,7 +621,6 @@
                 activeHabitId = null;
                 saveData();
                 
-                // Clear Gratitude Log too
                 gratitudeLog = {};
                 localStorage.removeItem(GRATITUDE_KEY);
                 renderGratitudeHistory();
@@ -622,6 +633,8 @@
             const content = document.getElementById(`${id}-content`);
             const icon = document.getElementById(`${id}-icon`);
             
+            if (!content || !icon) return;
+
             if (content.classList.contains('open')) {
                 content.classList.remove('open');
                 icon.classList.remove('open');
@@ -631,36 +644,40 @@
             }
         }
 
-        // Gratitude Logic
         function saveGratitude() {
             const input = document.getElementById('gratitudeInput');
+            if (!input) return;
             const text = input.value.trim();
             if (!text) return;
 
             const todayStr = formatDate(new Date());
+            if (!gratitudeLog) gratitudeLog = {};
             gratitudeLog[todayStr] = text;
             localStorage.setItem(GRATITUDE_KEY, JSON.stringify(gratitudeLog));
 
-            // UI Feedback
             const btn = document.getElementById('saveGratitudeBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="ph ph-check text-lg mr-1"></i> Saved!`;
-            btn.classList.replace('bg-slate-900', 'bg-dashboard-success');
-            btn.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-600');
-            
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.classList.replace('bg-dashboard-success', 'bg-slate-900');
-                btn.classList.replace('hover:bg-emerald-600', 'hover:bg-slate-800');
-            }, 2000);
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<i class="ph ph-check text-lg mr-1"></i> Saved!`;
+                btn.classList.replace('bg-slate-900', 'bg-dashboard-success');
+                btn.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-600');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.replace('bg-dashboard-success', 'bg-slate-900');
+                    btn.classList.replace('hover:bg-emerald-600', 'hover:bg-slate-800');
+                }, 2000);
+            }
 
             renderGratitudeHistory();
         }
 
         function renderGratitudeHistory() {
             const container = document.getElementById('gratitudeHistory');
+            if (!container) return;
             container.innerHTML = '';
             
+            if (!gratitudeLog) gratitudeLog = {};
             const dates = Object.keys(gratitudeLog).sort((a, b) => new Date(b) - new Date(a));
             
             if (dates.length === 0) {
@@ -670,7 +687,6 @@
                     const entry = document.createElement('div');
                     entry.className = 'bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1';
                     
-                    // Add 12:00:00 to prevent off-by-one errors from timezones
                     const d = new Date(date + 'T12:00:00');
                     const dateDisplay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     
@@ -684,7 +700,7 @@
 
             const today = formatDate(new Date());
             const input = document.getElementById('gratitudeInput');
-            if (gratitudeLog[today]) {
+            if (input && gratitudeLog[today]) {
                 input.value = gratitudeLog[today];
             }
         }
@@ -697,10 +713,10 @@
         }
 
         function renderTabs() {
+            if (!tabsContainer) return;
             tabsContainer.innerHTML = '';
             
             const currentHabits = getHabitsByType(activeType);
-            
             if (currentHabits.length === 0) return;
 
             currentHabits.forEach(habit => {
@@ -718,7 +734,8 @@
                 btn.onclick = () => setActiveTab(habit.id);
                 
                 const todayStr = formatDate(new Date());
-                const isCheckedToday = !!habit.history[todayStr];
+                const history = habit.history || {};
+                const isCheckedToday = !!history[todayStr];
                 
                 let indicatorHTML = '';
                 if (activeType === 'good') {
@@ -731,23 +748,24 @@
                         : `<span class="w-2 h-2 rounded-full bg-dashboard-success"></span>`;
                 }
 
-                btn.innerHTML = `${indicatorHTML}${escapeHTML(habit.name)}`;
+                btn.innerHTML = `${indicatorHTML} ${escapeHTML(habit.name)}`;
                 tabsContainer.appendChild(btn);
             });
         }
 
         function renderActiveHabit() {
+            if (!activeHabitContainer) return;
             const currentHabits = getHabitsByType(activeType);
             
             if (!activeHabitId || currentHabits.length === 0) {
-                emptyTabsState.style.display = 'flex';
+                if (emptyTabsState) emptyTabsState.style.display = 'flex';
                 Array.from(activeHabitContainer.children).forEach(child => {
                     if (child.id !== 'emptyTabsState') child.remove();
                 });
                 return;
             }
 
-            emptyTabsState.style.display = 'none';
+            if (emptyTabsState) emptyTabsState.style.display = 'none';
             const habit = currentHabits.find(h => h.id === activeHabitId);
             if (!habit) return;
 
@@ -756,6 +774,7 @@
             const dates = getPastDates(DAYS_TO_SHOW);
             const todayStr = formatDate(new Date());
             const isGood = habit.type === 'good';
+            const history = habit.history || {};
 
             const streakColor = streak > 0 
                 ? (isGood ? 'text-dashboard-success' : 'text-dashboard-success') 
@@ -769,7 +788,7 @@
                         <h2 class="text-2xl font-bold text-dashboard-text">${escapeHTML(habit.name)}</h2>
                         <div class="flex items-center gap-4 mt-2">
                             <span class="inline-flex items-center gap-1.5 text-sm font-medium ${streakColor} bg-slate-50 px-2.5 py-1 rounded border border-slate-200 shadow-sm">
-                                <i class="${streak > 0 ? 'ph-fill' : 'ph'}${headerIcon}"></i>
+                                <i class="${streak > 0 ? 'ph-fill' : 'ph'} ${headerIcon}"></i>
                                 Current Streak: ${streak}
                             </span>
                             <span class="text-xs text-dashboard-muted font-medium">Best: ${maxStreak}</span>
@@ -790,7 +809,7 @@
             `;
 
             dates.forEach((dateStr, index) => {
-                const isCompleted = !!habit.history[dateStr];
+                const isCompleted = !!history[dateStr];
                 const isToday = dateStr === todayStr;
                 const isBeforeCreation = dateStr < habit.createdAt;
                 
@@ -818,8 +837,8 @@
                             iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
                         } else {
                             let isConsecutiveMiss = false;
-                            if ((prevDate && prevDate >= habit.createdAt && !habit.history[prevDate]) || 
-                                (nextDate && nextDate >= habit.createdAt && !habit.history[nextDate])) {
+                            if ((prevDate && prevDate >= habit.createdAt && !history[prevDate]) || 
+                                (nextDate && nextDate >= habit.createdAt && !history[nextDate])) {
                                 isConsecutiveMiss = true;
                             }
                             
@@ -837,8 +856,8 @@
                     } else {
                         if (isCompleted) {
                             let isConsecutiveFail = false;
-                            if ((prevDate && prevDate >= habit.createdAt && habit.history[prevDate]) || 
-                                (nextDate && nextDate >= habit.createdAt && habit.history[nextDate])) {
+                            if ((prevDate && prevDate >= habit.createdAt && history[prevDate]) || 
+                                (nextDate && nextDate >= habit.createdAt && history[nextDate])) {
                                 isConsecutiveFail = true;
                             }
 
@@ -900,6 +919,7 @@
         }
 
         function renderMedicationTabs() {
+            if (!medicationTabsContainer) return;
             medicationTabsContainer.innerHTML = '';
             
             const meds = getHabitsByType('medication');
@@ -918,34 +938,37 @@
                 btn.onclick = () => setActiveMedicationTab(med.id);
                 
                 const todayStr = formatDate(new Date());
-                const isCheckedToday = !!med.history[todayStr];
+                const history = med.history || {};
+                const isCheckedToday = !!history[todayStr];
                 
                 const indicatorHTML = isCheckedToday 
                     ? `<span class="w-2 h-2 rounded-full bg-blue-500"></span>`
                     : `<span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-300"></span>`;
 
-                btn.innerHTML = `${indicatorHTML}${escapeHTML(med.name)}`;
+                btn.innerHTML = `${indicatorHTML} ${escapeHTML(med.name)}`;
                 medicationTabsContainer.appendChild(btn);
             });
         }
 
         function renderActiveMedication() {
+            if (!activeMedicationContainer) return;
             const meds = getHabitsByType('medication');
             
             if (!activeMedicationId || meds.length === 0) {
-                emptyMedicationState.style.display = 'flex';
+                if (emptyMedicationState) emptyMedicationState.style.display = 'flex';
                 Array.from(activeMedicationContainer.children).forEach(child => {
                     if (child.id !== 'emptyMedicationState') child.remove();
                 });
                 return;
             }
 
-            emptyMedicationState.style.display = 'none';
+            if (emptyMedicationState) emptyMedicationState.style.display = 'none';
             const med = meds.find(h => h.id === activeMedicationId);
             if (!med) return;
 
             const dates = getPastDates(DAYS_TO_SHOW);
             const todayStr = formatDate(new Date());
+            const history = med.history || {};
 
             let html = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -965,7 +988,7 @@
             `;
 
             dates.forEach((dateStr) => {
-                const isCompleted = !!med.history[dateStr];
+                const isCompleted = !!history[dateStr];
                 const isBeforeCreation = dateStr < med.createdAt;
                 const d = new Date(dateStr + 'T12:00:00');
                 const dayNum = d.getDate();
@@ -1023,6 +1046,8 @@
         }
 
         function renderAnalysis() {
+            if (!analysisContent) return;
+            
             if (habits.length === 0) {
                 analysisContent.innerHTML = `<div class="col-span-full text-center text-sm text-dashboard-muted py-6">Add a tracker to see analysis.</div>`;
                 return;
@@ -1039,10 +1064,11 @@
                 if (h.type === 'medication') return;
 
                 const maxS = calculateMaxStreak(h);
+                const history = h.history || {};
                 
                 if (h.type === 'good') {
                     goodHabitsCount++;
-                    totalGoodCompletions += Object.keys(h.history).length;
+                    totalGoodCompletions += Object.keys(history).length;
                     if (maxS > highestGoodStreak) highestGoodStreak = maxS;
                 } else {
                     badHabitsCount++;
@@ -1051,7 +1077,7 @@
                     start.setHours(0,0,0,0);
                     end.setHours(0,0,0,0);
                     const totalDays = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1);
-                    const failedDays = Object.keys(h.history).length;
+                    const failedDays = Object.keys(history).length;
                     totalBadResisted += (totalDays - failedDays);
                     
                     if (maxS > highestBadStreak) highestBadStreak = maxS;
@@ -1061,4 +1087,32 @@
             analysisContent.innerHTML = `
                 <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
                     <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Good Habits Built</span>
-                    <span class
+                    <span class="text-2xl font-bold text-dashboard-text">${totalGoodCompletions}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Total Days Completed</span>
+                </div>
+                
+                <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Bad Habits Resisted</span>
+                    <span class="text-2xl font-bold text-dashboard-text">${totalBadResisted}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Total Days Resisted</span>
+                </div>
+                
+                <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Best Good Streak</span>
+                    <span class="text-2xl font-bold text-dashboard-success">${highestGoodStreak}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Record across good habits</span>
+                </div>
+                
+                <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Best Quit Streak</span>
+                    <span class="text-2xl font-bold text-dashboard-success">${highestBadStreak}</span>
+                    <span class="text-[10px] text-dashboard-muted mt-1">Record across bad habits</span>
+                </div>
+            `;
+        }
+
+        // Run Init
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
