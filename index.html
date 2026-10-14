@@ -3,416 +3,1062 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Performance & Habit Dashboard</title>
+    <title>TrackerPro Dashboard</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #ffffff; }
-        
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .box-day { width: 28px; height: 28px; flex-shrink: 0; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid #1f2739; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;}
-        .box-day:hover { transform: scale(1.1); }
-        
-        /* Good Habit Colors */
-        .good-checked { background: #2ebd85; border-color: #2ebd85; color: #0b0f19; }
-        .good-empty { background: #111622; }
-        .good-warning { background: #e0294a; border-color: #e0294a; color: white; }
-
-        /* Bad Habit Colors */
-        .bad-success { background: #162a22; border-color: #2ebd85; } /* Unchecked is good */
-        .bad-warning { background: #d97706; border-color: #d97706; color: white; }
-        .bad-fail { background: #e0294a; border-color: #e0294a; color: white; }
-
-        /* Med Colors */
-        .med-checked { background: #64b5f6; border-color: #64b5f6; color: #0b0f19; }
-        
-        details > summary::-webkit-details-marker { display: none; }
-    </style>
-</head>
-<body class="p-4 md:p-8">
-    <div class="max-w-4xl mx-auto space-y-6">
-        
-        <!-- HEADER & TYPE TOGGLE -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#1f2739] pb-4 mb-6 gap-4">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight">Performance Tracking</h1>
-                <p class="text-xs text-[#8792a3] uppercase tracking-wider mt-1">30-Day Trailing Overview</p>
-            </div>
-            <div class="flex bg-[#111622] p-1 rounded-lg border border-[#1f2739]">
-                <button onclick="setHabitType('good')" id="btn-good" class="px-4 py-1.5 text-sm font-semibold rounded-md bg-[#1f2739] text-white transition-colors">Good Habits</button>
-                <button onclick="setHabitType('bad')" id="btn-bad" class="px-4 py-1.5 text-sm font-semibold rounded-md text-[#8792a3] hover:text-white transition-colors">Bad Habits</button>
-            </div>
-        </div>
-
-        <!-- MAIN TRACKER TABS -->
-        <div class="bg-[#111622] border border-[#1f2739] rounded-xl p-5 shadow-lg">
-            <div id="habit-tabs" class="flex gap-2 overflow-x-auto hide-scrollbar mb-5 pb-2 border-b border-[#1f2739]">
-                <!-- Tabs injected by JS -->
-            </div>
-
-            <div id="active-habit-view" class="min-h-[150px]">
-                <div class="flex justify-between items-end mb-4">
-                    <div>
-                        <h2 id="active-habit-name" class="text-xl font-bold text-white">Select a habit</h2>
-                        <p id="active-habit-streak" class="text-sm font-mono text-[#8792a3] mt-1">Streak: 0 days</p>
-                    </div>
-                </div>
-                
-                <div id="habit-chain" class="flex gap-2 overflow-x-auto hide-scrollbar py-2">
-                    <!-- 30 day boxes injected by JS -->
-                </div>
-                <div class="flex justify-between text-xs text-[#8792a3] mt-2 px-1">
-                    <span>30 Days Ago</span>
-                    <span>Today</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- ACCORDIONS -->
-        <div class="space-y-4">
-            
-            <!-- DAILY GRATITUDE -->
-            <details class="bg-[#111622] border border-[#1f2739] rounded-xl group">
-                <summary class="p-5 cursor-pointer flex justify-between items-center text-white hover:bg-[#161c2a] transition-colors rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <span class="text-lg">🙏</span>
-                        <span class="font-semibold uppercase tracking-wider text-sm">Daily Gratitude</span>
-                    </div>
-                    <span class="text-[#8792a3] group-open:rotate-180 transition-transform duration-300">▼</span>
-                </summary>
-                <div class="p-5 border-t border-[#1f2739]">
-                    <div class="mb-4">
-                        <label class="text-xs text-[#8792a3] uppercase tracking-wider mb-2 block">What are you grateful for today?</label>
-                        <textarea id="gratitude-input" rows="3" class="w-full bg-[#0b0f19] border border-[#1f2739] rounded-lg p-3 text-white focus:outline-none focus:border-[#2ebd85] transition-colors" placeholder="Today I am grateful for..."></textarea>
-                        <button onclick="saveGratitude()" class="mt-3 w-full bg-[#1f2739] hover:bg-[#2ebd85] hover:text-[#0b0f19] text-white font-semibold py-2 px-4 rounded-lg transition-colors">Save Reflection</button>
-                    </div>
-                    <div id="gratitude-history" class="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
-                        <!-- History injected by JS -->
-                    </div>
-                </div>
-            </details>
-
-            <!-- MEDICATION LOG -->
-            <details class="bg-[#111622] border border-[#1f2739] rounded-xl group">
-                <summary class="p-5 cursor-pointer flex justify-between items-center text-white hover:bg-[#161c2a] transition-colors rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <span class="text-lg">💊</span>
-                        <span class="font-semibold uppercase tracking-wider text-sm">Medication Log</span>
-                    </div>
-                    <span class="text-[#8792a3] group-open:rotate-180 transition-transform duration-300">▼</span>
-                </summary>
-                <div class="p-5 border-t border-[#1f2739]">
-                    <div id="med-tabs" class="flex gap-2 overflow-x-auto hide-scrollbar mb-4">
-                        <!-- Med tabs injected by JS -->
-                    </div>
-                    <div id="active-med-view">
-                        <h3 id="active-med-name" class="text-lg font-bold mb-3">Select Medication</h3>
-                        <div id="med-chain" class="flex gap-2 overflow-x-auto hide-scrollbar py-2 mb-2">
-                            <!-- Med boxes injected by JS -->
-                        </div>
-                    </div>
-                </div>
-            </details>
-
-            <!-- MANAGEMENT / SETTINGS -->
-            <details class="bg-[#111622] border border-[#1f2739] rounded-xl group">
-                <summary class="p-5 cursor-pointer flex justify-between items-center text-white hover:bg-[#161c2a] transition-colors rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <span class="text-lg">⚙️</span>
-                        <span class="font-semibold uppercase tracking-wider text-sm">Manage Trackers</span>
-                    </div>
-                    <span class="text-[#8792a3] group-open:rotate-180 transition-transform duration-300">▼</span>
-                </summary>
-                <div class="p-5 border-t border-[#1f2739]">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-[#8792a3] uppercase mb-1 block">New Tracker Name</label>
-                            <input type="text" id="new-item-name" class="w-full bg-[#0b0f19] border border-[#1f2739] rounded-lg p-2 text-white" placeholder="e.g., Read 10 Pages">
-                        </div>
-                        <div>
-                            <label class="text-xs text-[#8792a3] uppercase mb-1 block">Tracker Type</label>
-                            <select id="new-item-type" class="w-full bg-[#0b0f19] border border-[#1f2739] rounded-lg p-2 text-white">
-                                <option value="good">Good Habit</option>
-                                <option value="bad">Bad Habit</option>
-                                <option value="med">Medication</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button onclick="addTracker()" class="mt-4 w-full bg-[#1f2739] hover:bg-white hover:text-black text-white font-semibold py-2 rounded-lg transition-colors">Add Tracker</button>
-                </div>
-            </details>
-        </div>
-    </div>
+    
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <script>
-        // State
-        let data = JSON.parse(localStorage.getItem('trackerData')) || {
-            good: {},
-            bad: {},
-            med: {}
-        };
-        let gratitudeLog = JSON.parse(localStorage.getItem('gratitudeLog')) || {};
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dashboard: {
+                            bg: '#f8fafc',      /* Slate 50 */
+                            card: '#ffffff',
+                            border: '#e2e8f0',  /* Slate 200 */
+                            text: '#0f172a',    /* Slate 900 */
+                            muted: '#64748b',   /* Slate 500 */
+                            primary: '#334155', /* Slate 700 */
+                            success: '#10b981', /* Emerald 500 */
+                            danger: '#ef4444',  /* Red 500 */
+                            warning: '#f59e0b', /* Amber 500 */
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+                        'tab-good': 'inset 0 -2px 0 0 #10b981',
+                        'tab-bad': 'inset 0 -2px 0 0 #ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: theme('colors.dashboard.bg');
+            color: theme('colors.dashboard.text');
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Scrollbar for the horizontal chain */
+        .chain-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .chain-container::-webkit-scrollbar-track {
+            background: theme('colors.slate.100');
+            border-radius: 4px;
+        }
+        .chain-container::-webkit-scrollbar-thumb {
+            background-color: theme('colors.slate.300');
+            border-radius: 4px;
+        }
+        .chain-container::-webkit-scrollbar-thumb:hover {
+            background-color: theme('colors.slate.400');
+        }
+
+        /* Tabs Scrollbar hide */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom Scrollbar for Gratitude History */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.slate.200');
+            border-radius: 4px;
+        }
+
+        /* Node animation */
+        @keyframes pop {
+            0% { transform: scale(0.90); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .node-active {
+            animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Accordion transition */
+        .accordion-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .accordion-content.open {
+            max-height: 500px; 
+            opacity: 1;
+            padding-top: 1.5rem; 
+            padding-bottom: 1.5rem;
+        }
         
-        let currentType = 'good';
-        let activeIds = { good: null, bad: null, med: null };
+        .accordion-icon {
+            transition: transform 0.3s ease;
+        }
+        .accordion-icon.open {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6">
 
-        // Initialization
+    <main class="w-full max-w-4xl flex flex-col gap-6">
+        
+        <!-- Header -->
+        <header class="flex items-center justify-between bg-white p-5 rounded-xl border border-dashboard-border shadow-card">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-sm">
+                    <i class="ph ph-chart-polar text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl leading-tight text-dashboard-text">Tracker<span class="text-dashboard-success">Pro</span></h1>
+                    <p class="text-xs text-dashboard-muted font-medium uppercase tracking-wider" id="headerDate"></p>
+                </div>
+            </div>
+            <div class="text-right hidden sm:block">
+                <p class="text-sm text-dashboard-muted">Dashboard Status</p>
+                <p class="text-sm font-semibold text-dashboard-success flex items-center justify-end gap-1">
+                    <span class="w-2 h-2 rounded-full bg-dashboard-success animate-pulse"></span> Synchronized
+                </p>
+            </div>
+        </header>
+
+        <!-- TOP SECTION: Tabbed Habit Tracker -->
+        <section class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden flex flex-col">
+            
+            <!-- Habit Type Toggle -->
+            <div class="bg-slate-50 border-b border-dashboard-border p-3 flex justify-center sm:justify-start">
+                <div class="inline-flex bg-slate-200/70 p-1 rounded-lg">
+                    <button id="toggleGoodBtn" onclick="setActiveType('good')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5">
+                        <i class="ph ph-trend-up text-dashboard-success mr-1"></i> Good Habits
+                    </button>
+                    <button id="toggleBadBtn" onclick="setActiveType('bad')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text">
+                        <i class="ph ph-trend-down text-dashboard-danger mr-1"></i> Bad Habits
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs Header -->
+            <div class="border-b border-dashboard-border bg-slate-50 px-2 pt-2 flex overflow-x-auto no-scrollbar" id="tabsContainer">
+                <!-- Tabs injected via JS -->
+            </div>
+
+            <!-- Active Habit Content -->
+            <div class="p-6 md:p-8 flex flex-col min-h-[250px]" id="activeHabitContainer">
+                <!-- Populated via JS -->
+                <div id="emptyTabsState" class="flex flex-col items-center justify-center py-10 text-center h-full">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                        <i class="ph ph-target text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-dashboard-text">No Trackers Found</h3>
+                    <p class="text-sm text-dashboard-muted mt-1 max-w-sm">You haven't set up any habits for this category yet. Use the accordion below to add one.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BOTTOM SECTION: Accordions -->
+        <section class="flex flex-col gap-3">
+            
+            <!-- Accordion 1: Add New Habit -->
+            <div class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden">
+                <button class="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors" onclick="toggleAccordion('addHabitAccordion')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center">
+                            <i class="ph ph-plus text-lg"></i>
+                        </div>
+                        <span class="font-semibold text-dashboard-text">Add New Tracker</span>
+                    </div>
+                    <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="addHabitAccordion-icon"></i>
+                </button>
+                <div id="addHabitAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="habitType" value="good" checked class="text-dashboard-success focus:ring-dashboard-success w-4 h-4">
+                                <span class="text-sm font-medium text-dashboard-text">Good Habit (Build)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="habitType" value="bad" class="text-dashboard-danger focus:ring-dashboard-danger w-4 h-4">
+                                <span class="text-sm font-medium text-dashboard-text">Bad Habit (Quit)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="habitType" value="medication" class="text-blue-500 focus:ring-blue-500 w-4 h-4">
+                                <span class="text-sm font-medium text-dashboard-text">Medication (Log)</span>
+                            </label>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-4 items-center">
+                            <div class="flex-1 w-full relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="ph ph-tag text-slate-400"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="habitInput" 
+                                    class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-sm transition-shadow" 
+                                    placeholder="e.g., Read 30 mins (Good) or Smoke (Bad)"
+                                >
+                            </div>
+                            <button 
+                                id="addHabitBtn"
+                                class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm whitespace-nowrap"
+                            >
+                                Initialize Tracker
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion 2: Daily Gratitude -->
+            <div class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden">
+                <button class="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors" onclick="toggleAccordion('gratitudeAccordion')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-rose-50 text-rose-500 flex items-center justify-center">
+                            <i class="ph ph-heart text-lg"></i>
+                        </div>
+                        <span class="font-semibold text-dashboard-text">Daily Gratitude</span>
+                    </div>
+                    <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="gratitudeAccordion-icon"></i>
+                </button>
+                <div id="gratitudeAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-dashboard-muted uppercase tracking-wider mb-2">What are you grateful for today?</label>
+                            <textarea id="gratitudeInput" rows="3" class="w-full p-3 border border-slate-300 rounded-lg bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 text-sm transition-shadow resize-none" placeholder="Today I am grateful for..."></textarea>
+                        </div>
+                        <button id="saveGratitudeBtn" onclick="saveGratitude()" class="w-full sm:w-auto self-end bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm whitespace-nowrap">
+                            Save Reflection
+                        </button>
+                        <div id="gratitudeHistory" class="mt-2 flex flex-col gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion 3: Medication Tracker -->
+            <div class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden">
+                <button class="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors" onclick="toggleAccordion('medicationAccordion')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <i class="ph ph-pill text-lg"></i>
+                        </div>
+                        <span class="font-semibold text-dashboard-text">Medication Tracker</span>
+                    </div>
+                    <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="medicationAccordion-icon"></i>
+                </button>
+                <div id="medicationAccordion-content" class="accordion-content border-t border-dashboard-border bg-slate-50/50">
+                    <!-- Medication Tabs Header -->
+                    <div class="border-b border-dashboard-border bg-slate-50 px-2 flex overflow-x-auto no-scrollbar" id="medicationTabsContainer">
+                        <!-- Tabs injected via JS -->
+                    </div>
+                    
+                    <!-- Active Medication Content -->
+                    <div class="p-6 flex flex-col min-h-[250px]" id="activeMedicationContainer">
+                        <div id="emptyMedicationState" class="flex flex-col items-center justify-center py-10 text-center h-full">
+                            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-300">
+                                <i class="ph ph-pill text-3xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-dashboard-text">No Medications Found</h3>
+                            <p class="text-sm text-dashboard-muted mt-1 max-w-sm">Use the 'Add New Tracker' section above to log medications.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion 4: Analysis / Stats -->
+            <div class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden">
+                <button class="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors" onclick="toggleAccordion('analysisAccordion')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center">
+                            <i class="ph ph-chart-line-up text-lg"></i>
+                        </div>
+                        <span class="font-semibold text-dashboard-text">Analysis & Statistics</span>
+                    </div>
+                    <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="analysisAccordion-icon"></i>
+                </button>
+                <div id="analysisAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
+                    <div id="analysisContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion 5: Settings -->
+            <div class="bg-white rounded-xl border border-dashboard-border shadow-card overflow-hidden">
+                <button class="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors" onclick="toggleAccordion('settingsAccordion')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center">
+                            <i class="ph ph-gear text-lg"></i>
+                        </div>
+                        <span class="font-semibold text-dashboard-text">System Settings</span>
+                    </div>
+                    <i class="ph ph-caret-down text-dashboard-muted accordion-icon" id="settingsAccordion-icon"></i>
+                </button>
+                <div id="settingsAccordion-content" class="accordion-content px-6 border-t border-dashboard-border bg-slate-50/50">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border border-red-100 rounded-lg">
+                        <div>
+                            <h4 class="text-sm font-semibold text-dashboard-text">Danger Zone</h4>
+                            <p class="text-xs text-dashboard-muted mt-1">Permanently delete all trackers, categories, and historical data.</p>
+                        </div>
+                        <button onclick="clearAllData()" class="mt-3 sm:mt-0 px-4 py-2 bg-red-50 text-dashboard-danger hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-medium transition-colors border border-red-200">
+                            Clear Database
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // State Management
+        const STORAGE_KEY = 'tracker_pro_v3';
+        const GRATITUDE_KEY = 'tracker_pro_gratitude';
+        const DAYS_TO_SHOW = 30;
+        let habits = [];
+        let gratitudeLog = {};
+        let activeType = 'good'; // 'good' or 'bad'
+        let activeHabitId = null;
+        let activeMedicationId = null;
+
+        // DOM Elements
+        const headerDate = document.getElementById('headerDate');
+        const tabsContainer = document.getElementById('tabsContainer');
+        const activeHabitContainer = document.getElementById('activeHabitContainer');
+        const emptyTabsState = document.getElementById('emptyTabsState');
+        
+        const habitInput = document.getElementById('habitInput');
+        const addHabitBtn = document.getElementById('addHabitBtn');
+        const analysisContent = document.getElementById('analysisContent');
+        const medicationTabsContainer = document.getElementById('medicationTabsContainer');
+        const activeMedicationContainer = document.getElementById('activeMedicationContainer');
+        const emptyMedicationState = document.getElementById('emptyMedicationState');
+
         function init() {
-            // Ensure data structure exists
-            if (!data.good) data.good = {};
-            if (!data.bad) data.bad = {};
-            if (!data.med) data.med = {};
+            // Set Header Date
+            const now = new Date();
+            headerDate.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-            // Set default actives if missing
-            ['good', 'bad', 'med'].forEach(type => {
-                const keys = Object.keys(data[type]);
-                if (keys.length > 0 && !activeIds[type]) activeIds[type] = keys[0];
+            // Load Data
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                if (data) habits = JSON.parse(data);
+                
+                const gratData = localStorage.getItem(GRATITUDE_KEY);
+                if (gratData) gratitudeLog = JSON.parse(gratData);
+            } catch (e) {
+                console.error("Failed to load data", e);
+                habits = [];
+                gratitudeLog = {};
+            }
+
+            // Bind Events
+            addHabitBtn.addEventListener('click', handleAddHabit);
+            habitInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAddHabit();
             });
 
-            renderInterface();
+            // Set initial state
+            updateActiveHabitIdForType();
+            updateActiveMedicationId();
+            
+            // Open 'Add Habit' accordion by default if no habits exist
+            if (habits.length === 0) {
+                toggleAccordion('addHabitAccordion');
+            }
+
+            renderAll();
             renderGratitudeHistory();
         }
 
-        function saveData() {
-            localStorage.setItem('trackerData', JSON.stringify(data));
+        // Utilities
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
-        // Generate Last 30 Days
-        function getDates() {
+        function getPastDates(numDays) {
             const dates = [];
-            for (let i = 29; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                dates.push(d.toISOString().split('T')[0]);
+            const today = new Date();
+            for (let i = numDays - 1; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                dates.push(formatDate(d));
             }
             return dates;
         }
-
-        // Logic & Rendering
-        function setHabitType(type) {
-            currentType = type;
-            document.getElementById('btn-good').className = type === 'good' ? 'px-4 py-1.5 text-sm font-semibold rounded-md bg-[#1f2739] text-white transition-colors' : 'px-4 py-1.5 text-sm font-semibold rounded-md text-[#8792a3] hover:text-white transition-colors';
-            document.getElementById('btn-bad').className = type === 'bad' ? 'px-4 py-1.5 text-sm font-semibold rounded-md bg-[#1f2739] text-white transition-colors' : 'px-4 py-1.5 text-sm font-semibold rounded-md text-[#8792a3] hover:text-white transition-colors';
-            renderInterface();
+        
+        function getHabitsByType(type) {
+            return habits.filter(h => h.type === type);
         }
 
-        function toggleDay(type, id, date) {
-            if (!data[type][id].dates) data[type][id].dates = {};
-            data[type][id].dates[date] = !data[type][id].dates[date];
-            saveData();
-            renderInterface();
-        }
-
-        function renderInterface() {
-            // 1. Render Main Tabs (Good/Bad)
-            const mainTabsContainer = document.getElementById('habit-tabs');
-            mainTabsContainer.innerHTML = '';
-            const items = Object.entries(data[currentType]);
-            
-            if (items.length === 0) {
-                document.getElementById('active-habit-name').innerText = `No ${currentType} habits yet.`;
-                document.getElementById('habit-chain').innerHTML = '';
-                document.getElementById('active-habit-streak').innerText = '';
-            } else {
-                if (!activeIds[currentType] || !data[currentType][activeIds[currentType]]) {
-                    activeIds[currentType] = items[0][0];
-                }
-
-                items.forEach(([id, item]) => {
-                    const btn = document.createElement('button');
-                    const isActive = activeIds[currentType] === id;
-                    btn.className = `px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${isActive ? 'bg-[#1f2739] text-white' : 'text-[#8792a3] hover:bg-[#161c2a]'}`;
-                    btn.innerText = item.name;
-                    btn.onclick = () => { activeIds[currentType] = id; renderInterface(); };
-                    mainTabsContainer.appendChild(btn);
-                });
-
-                renderChain(currentType, activeIds[currentType], 'habit-chain');
-            }
-
-            // 2. Render Med Tabs
-            const medTabsContainer = document.getElementById('med-tabs');
-            medTabsContainer.innerHTML = '';
-            const meds = Object.entries(data.med);
-            
-            if (meds.length === 0) {
-                document.getElementById('active-med-name').innerText = 'No medications added.';
-                document.getElementById('med-chain').innerHTML = '';
-            } else {
-                if (!activeIds.med || !data.med[activeIds.med]) activeIds.med = meds[0][0];
-                
-                meds.forEach(([id, item]) => {
-                    const btn = document.createElement('button');
-                    const isActive = activeIds.med === id;
-                    btn.className = `px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${isActive ? 'bg-[#1f2739] text-[#64b5f6]' : 'text-[#8792a3] hover:bg-[#161c2a]'}`;
-                    btn.innerText = item.name;
-                    btn.onclick = () => { activeIds.med = id; renderInterface(); };
-                    medTabsContainer.appendChild(btn);
-                });
-
-                renderChain('med', activeIds.med, 'med-chain');
+        function updateActiveMedicationId() {
+            const meds = getHabitsByType('medication');
+            if (!meds.find(h => h.id === activeMedicationId)) {
+                activeMedicationId = meds.length > 0 ? meds[0].id : null;
             }
         }
 
-        function renderChain(type, id, containerId) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            const item = data[type][id];
-            const dates = getDates();
-            
-            if (type !== 'med') {
-                document.getElementById('active-habit-name').innerText = item.name;
-            } else {
-                document.getElementById('active-med-name').innerText = item.name;
+        function updateActiveHabitIdForType() {
+            const currentHabits = getHabitsByType(activeType);
+            if (!currentHabits.find(h => h.id === activeHabitId)) {
+                activeHabitId = currentHabits.length > 0 ? currentHabits[0].id : null;
             }
+        }
 
+        function calculateStreak(habit) {
             let streak = 0;
-            let consecutiveMisses = 0;
-            let consecutiveFails = 0;
-
-            // Calculate streak (looking backwards from today)
-            for (let i = dates.length - 1; i >= 0; i--) {
-                const date = dates[i];
-                if (type === 'good') {
-                    if (item.dates && item.dates[date]) streak++; else break;
-                } else if (type === 'bad') {
-                    if (!item.dates || !item.dates[date]) streak++; else break;
-                }
-            }
-
-            if (type !== 'med') {
-                const streakText = type === 'good' ? `Streak: ${streak} days` : `Clean: ${streak} days`;
-                document.getElementById('active-habit-streak').innerText = streakText;
-            }
-
-            // Render boxes
-            dates.forEach((date, index) => {
-                const box = document.createElement('div');
-                const isChecked = item.dates && item.dates[date];
+            const today = new Date();
+            let currentDateStr = formatDate(today);
+            
+            const isGood = habit.type === 'good';
+            let activeToday = isGood ? habit.history[currentDateStr] : !habit.history[currentDateStr];
+            
+            if (!activeToday) {
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                currentDateStr = formatDate(yesterday);
                 
-                // Styling logic based on type
-                if (type === 'good') {
-                    if (isChecked) {
-                        box.className = 'box-day good-checked';
-                        box.innerHTML = '✓';
-                        consecutiveMisses = 0;
-                    } else {
-                        consecutiveMisses++;
-                        // If it's today and missed, don't color red yet, unless previous was missed
-                        if (consecutiveMisses >= 2 && index < dates.length - 1) {
-                            box.className = 'box-day good-warning';
-                            box.innerHTML = '!';
-                        } else {
-                            box.className = 'box-day good-empty';
-                        }
-                    }
-                } else if (type === 'bad') {
-                    if (isChecked) {
-                        consecutiveFails++;
-                        if (consecutiveFails >= 2) {
-                            box.className = 'box-day bad-fail';
-                            box.innerHTML = 'X';
-                        } else {
-                            box.className = 'box-day bad-warning';
-                            box.innerHTML = '!';
-                        }
-                    } else {
-                        box.className = 'box-day bad-success';
-                        consecutiveFails = 0;
-                    }
-                } else if (type === 'med') {
-                    if (isChecked) {
-                        box.className = 'box-day med-checked';
-                        box.innerHTML = '✓';
-                    } else {
-                        box.className = 'box-day good-empty';
-                    }
-                }
+                if (currentDateStr < habit.createdAt) return 0;
+                let activeYesterday = isGood ? habit.history[currentDateStr] : !habit.history[currentDateStr];
+                
+                if (!activeYesterday) return 0;
+            }
 
-                box.title = date;
-                box.onclick = () => toggleDay(type, id, date);
-                container.appendChild(box);
-            });
+            let d = new Date(currentDateStr);
+            while (true) {
+                const dateStr = formatDate(d);
+                if (dateStr < habit.createdAt) break; 
+                
+                let active = isGood ? habit.history[dateStr] : !habit.history[dateStr];
+                if (active) {
+                    streak++;
+                    d.setDate(d.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
         }
 
-        // Management
-        function addTracker() {
-            const name = document.getElementById('new-item-name').value.trim();
-            const type = document.getElementById('new-item-type').value;
+        function calculateMaxStreak(habit) {
+            const isGood = habit.type === 'good';
+            let max = 0;
+            let current = 0;
             
+            const start = new Date(habit.createdAt);
+            const end = new Date();
+            start.setHours(0,0,0,0);
+            end.setHours(0,0,0,0);
+
+            let d = new Date(start);
+            while (d <= end) {
+                const dateStr = formatDate(d);
+                let active = isGood ? habit.history[dateStr] : !habit.history[dateStr];
+                
+                if (active) {
+                    current++;
+                    if (current > max) max = current;
+                } else {
+                    current = 0;
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            return max;
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+            renderAll();
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
+        function setActiveType(type) {
+            activeType = type;
+            
+            // Update Toggle UI
+            const goodBtn = document.getElementById('toggleGoodBtn');
+            const badBtn = document.getElementById('toggleBadBtn');
+            
+            if (type === 'good') {
+                goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
+                badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+            } else {
+                badBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-white text-dashboard-text shadow-sm ring-1 ring-slate-900/5";
+                goodBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-dashboard-muted hover:text-dashboard-text";
+            }
+
+            updateActiveHabitIdForType();
+            renderAll();
+        }
+
+        function handleAddHabit() {
+            const name = habitInput.value.trim();
             if (!name) return;
+
+            const typeRadios = document.getElementsByName('habitType');
+            let selectedType = 'good';
+            for (let radio of typeRadios) {
+                if (radio.checked) {
+                    selectedType = radio.value;
+                    break;
+                }
+            }
+
+            const newHabit = {
+                id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+                name: name,
+                type: selectedType,
+                history: {},
+                createdAt: formatDate(new Date())
+            };
+
+            habits.push(newHabit);
             
-            const id = Date.now().toString();
-            data[type][id] = { name: name, created: new Date().toISOString().split('T')[0], dates: {} };
-            activeIds[type] = id;
+            if (selectedType === 'medication') {
+                updateActiveMedicationId();
+                activeMedicationId = newHabit.id;
+                const content = document.getElementById('medicationAccordion-content');
+                if (!content.classList.contains('open')) {
+                    toggleAccordion('medicationAccordion');
+                }
+            } else {
+                setActiveType(selectedType);
+                activeHabitId = newHabit.id; 
+            }
             
-            if (type === 'good' || type === 'bad') setHabitType(type);
+            habitInput.value = '';
             
-            document.getElementById('new-item-name').value = '';
+            const content = document.getElementById('addHabitAccordion-content');
+            if (content.classList.contains('open')) {
+                toggleAccordion('addHabitAccordion');
+            }
+
             saveData();
-            renderInterface();
+        }
+
+        function toggleDay(habitId, dateStr) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+            
+            if (dateStr < habit.createdAt) return;
+
+            if (habit.history[dateStr]) {
+                delete habit.history[dateStr];
+            } else {
+                habit.history[dateStr] = true;
+            }
+            saveData();
+        }
+
+        function setActiveTab(id) {
+            activeHabitId = id;
+            renderAll();
+        }
+        
+        function setActiveMedicationTab(id) {
+            activeMedicationId = id;
+            renderAll();
+        }
+
+        function deleteHabit(id) {
+            if(confirm("Are you sure you want to permanently delete this tracker?")) {
+                habits = habits.filter(h => h.id !== id);
+                updateActiveHabitIdForType();
+                updateActiveMedicationId();
+                saveData();
+            }
+        }
+
+        function clearAllData() {
+            if(confirm("CRITICAL WARNING: This will delete ALL habits and history. Proceed?")) {
+                habits = [];
+                activeHabitId = null;
+                saveData();
+                
+                // Clear Gratitude Log too
+                gratitudeLog = {};
+                localStorage.removeItem(GRATITUDE_KEY);
+                renderGratitudeHistory();
+
+                toggleAccordion('settingsAccordion');
+            }
+        }
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(`${id}-content`);
+            const icon = document.getElementById(`${id}-icon`);
+            
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                icon.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                icon.classList.add('open');
+            }
         }
 
         // Gratitude Logic
         function saveGratitude() {
-            const input = document.getElementById('gratitude-input');
+            const input = document.getElementById('gratitudeInput');
             const text = input.value.trim();
             if (!text) return;
 
-            const today = new Date().toISOString().split('T')[0];
-            gratitudeLog[today] = text;
-            localStorage.setItem('gratitudeLog', JSON.stringify(gratitudeLog));
+            const todayStr = formatDate(new Date());
+            gratitudeLog[todayStr] = text;
+            localStorage.setItem(GRATITUDE_KEY, JSON.stringify(gratitudeLog));
+
+            // UI Feedback
+            const btn = document.getElementById('saveGratitudeBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="ph ph-check text-lg mr-1"></i> Saved!`;
+            btn.classList.replace('bg-slate-900', 'bg-dashboard-success');
+            btn.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-600');
             
-            renderGratitudeHistory();
-            
-            // Visual feedback
-            const btn = input.nextElementSibling;
-            const originalText = btn.innerText;
-            btn.innerText = "Saved!";
-            btn.classList.add('bg-[#2ebd85]', 'text-[#0b0f19]');
             setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.remove('bg-[#2ebd85]', 'text-[#0b0f19]');
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-dashboard-success', 'bg-slate-900');
+                btn.classList.replace('hover:bg-emerald-600', 'hover:bg-slate-800');
             }, 2000);
+
+            renderGratitudeHistory();
         }
 
         function renderGratitudeHistory() {
-            const container = document.getElementById('gratitude-history');
+            const container = document.getElementById('gratitudeHistory');
             container.innerHTML = '';
             
             const dates = Object.keys(gratitudeLog).sort((a, b) => new Date(b) - new Date(a));
             
             if (dates.length === 0) {
-                container.innerHTML = '<div class="text-sm text-[#8792a3] italic p-2">No reflections saved yet. Start today!</div>';
+                container.innerHTML = '<div class="text-sm text-dashboard-muted italic py-4 text-center bg-white rounded-lg border border-slate-200">No reflections saved yet. Start today!</div>';
             } else {
                 dates.forEach(date => {
-                    const entryBox = document.createElement('div');
-                    entryBox.className = 'bg-[#161c2a] p-3 rounded-lg border border-[#1f2739] text-sm';
+                    const entry = document.createElement('div');
+                    entry.className = 'bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1';
                     
-                    const dateHeader = document.createElement('div');
-                    dateHeader.className = 'text-xs text-[#2ebd85] font-semibold mb-1 tracking-wider';
-                    dateHeader.textContent = date;
+                    // Add 12:00:00 to prevent off-by-one errors from timezones
+                    const d = new Date(date + 'T12:00:00');
+                    const dateDisplay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     
-                    const textContent = document.createElement('div');
-                    textContent.className = 'text-[#e2e8f0]';
-                    textContent.textContent = gratitudeLog[date];
-
-                    entryBox.appendChild(dateHeader);
-                    entryBox.appendChild(textContent);
-                    container.appendChild(entryBox);
+                    entry.innerHTML = `
+                        <div class="text-xs font-semibold text-rose-500 tracking-wide uppercase">${dateDisplay}</div>
+                        <div class="text-sm text-dashboard-text">${escapeHTML(gratitudeLog[date])}</div>
+                    `;
+                    container.appendChild(entry);
                 });
             }
 
-            const today = new Date().toISOString().split('T')[0];
-            const input = document.getElementById('gratitude-input');
+            const today = formatDate(new Date());
+            const input = document.getElementById('gratitudeInput');
             if (gratitudeLog[today]) {
                 input.value = gratitudeLog[today];
             }
         }
 
-        init();
-    </script>
-</body>
-</html>
+        function renderAll() {
+            renderTabs();
+            renderActiveHabit();
+            renderMedications();
+            renderAnalysis();
+        }
+
+        function renderTabs() {
+            tabsContainer.innerHTML = '';
+            
+            const currentHabits = getHabitsByType(activeType);
+            
+            if (currentHabits.length === 0) return;
+
+            currentHabits.forEach(habit => {
+                const isActive = habit.id === activeHabitId;
+                const btn = document.createElement('button');
+                
+                const shadowClass = activeType === 'good' ? 'shadow-tab-good' : 'shadow-tab-bad';
+                
+                btn.className = `px-5 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg transition-all flex items-center gap-2 ${
+                    isActive 
+                    ? `bg-white text-dashboard-text ${shadowClass} relative z-10` 
+                    : 'text-dashboard-muted hover:text-dashboard-text hover:bg-slate-100'
+                }`;
+                
+                btn.onclick = () => setActiveTab(habit.id);
+                
+                const todayStr = formatDate(new Date());
+                const isCheckedToday = !!habit.history[todayStr];
+                
+                let indicatorHTML = '';
+                if (activeType === 'good') {
+                    indicatorHTML = isCheckedToday 
+                        ? `<span class="w-2 h-2 rounded-full bg-dashboard-success"></span>`
+                        : `<span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-300"></span>`;
+                } else {
+                    indicatorHTML = isCheckedToday
+                        ? `<span class="w-2 h-2 rounded-full bg-dashboard-danger"></span>`
+                        : `<span class="w-2 h-2 rounded-full bg-dashboard-success"></span>`;
+                }
+
+                btn.innerHTML = `${indicatorHTML}${escapeHTML(habit.name)}`;
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderActiveHabit() {
+            const currentHabits = getHabitsByType(activeType);
+            
+            if (!activeHabitId || currentHabits.length === 0) {
+                emptyTabsState.style.display = 'flex';
+                Array.from(activeHabitContainer.children).forEach(child => {
+                    if (child.id !== 'emptyTabsState') child.remove();
+                });
+                return;
+            }
+
+            emptyTabsState.style.display = 'none';
+            const habit = currentHabits.find(h => h.id === activeHabitId);
+            if (!habit) return;
+
+            const streak = calculateStreak(habit);
+            const maxStreak = calculateMaxStreak(habit);
+            const dates = getPastDates(DAYS_TO_SHOW);
+            const todayStr = formatDate(new Date());
+            const isGood = habit.type === 'good';
+
+            const streakColor = streak > 0 
+                ? (isGood ? 'text-dashboard-success' : 'text-dashboard-success') 
+                : 'text-dashboard-muted';
+                
+            const headerIcon = isGood ? 'ph-trend-up' : 'ph-shield-check';
+
+            let html = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-dashboard-text">${escapeHTML(habit.name)}</h2>
+                        <div class="flex items-center gap-4 mt-2">
+                            <span class="inline-flex items-center gap-1.5 text-sm font-medium ${streakColor} bg-slate-50 px-2.5 py-1 rounded border border-slate-200 shadow-sm">
+                                <i class="${streak > 0 ? 'ph-fill' : 'ph'}${headerIcon}"></i>
+                                Current Streak: ${streak}
+                            </span>
+                            <span class="text-xs text-dashboard-muted font-medium">Best: ${maxStreak}</span>
+                        </div>
+                    </div>
+                    <button onclick="deleteHabit('${habit.id}')" class="text-slate-400 hover:text-dashboard-danger hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 self-start sm:self-auto border border-transparent hover:border-red-100">
+                        <i class="ph ph-trash"></i> Delete
+                    </button>
+                </div>
+
+                <div class="mb-2 flex justify-between items-center text-xs font-semibold uppercase tracking-wider">
+                    <span class="text-dashboard-muted">Past ${DAYS_TO_SHOW} Days</span>
+                    <span class="text-slate-400">Created: ${habit.createdAt}</span>
+                </div>
+                
+                <div class="chain-container overflow-x-auto pb-4 -mx-2 px-2" id="gridContainer">
+                    <div class="flex items-center gap-2 min-w-max h-16">
+            `;
+
+            dates.forEach((dateStr, index) => {
+                const isCompleted = !!habit.history[dateStr];
+                const isToday = dateStr === todayStr;
+                const isBeforeCreation = dateStr < habit.createdAt;
+                
+                const d = new Date(dateStr + 'T12:00:00');
+                const dayNum = d.getDate();
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+
+                let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative group shadow-sm";
+                let textClasses = "text-[10px] font-bold z-10";
+                let iconHTML = '';
+                
+                if (isBeforeCreation) {
+                    btnClasses += " bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed";
+                    textClasses += " text-slate-300";
+                    iconHTML = `<i class="ph ph-minus text-slate-300 z-10"></i>`;
+                } else {
+                    btnClasses += " cursor-pointer";
+                    
+                    const prevDate = dates[index - 1];
+                    const nextDate = dates[index + 1];
+                    
+                    if (isGood) {
+                        if (isCompleted) {
+                            btnClasses += " bg-dashboard-success border-dashboard-success text-white node-active shadow-sm";
+                            iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
+                        } else {
+                            let isConsecutiveMiss = false;
+                            if ((prevDate && prevDate >= habit.createdAt && !habit.history[prevDate]) || 
+                                (nextDate && nextDate >= habit.createdAt && !habit.history[nextDate])) {
+                                isConsecutiveMiss = true;
+                            }
+                            
+                            if (isConsecutiveMiss) {
+                                btnClasses += " bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400";
+                                textClasses += " text-red-600";
+                                iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                            } else {
+                                btnClasses += isToday 
+                                    ? " bg-emerald-50/50 border-emerald-200 hover:border-dashboard-success text-dashboard-primary"
+                                    : " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500";
+                                iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                            }
+                        }
+                    } else {
+                        if (isCompleted) {
+                            let isConsecutiveFail = false;
+                            if ((prevDate && prevDate >= habit.createdAt && habit.history[prevDate]) || 
+                                (nextDate && nextDate >= habit.createdAt && habit.history[nextDate])) {
+                                isConsecutiveFail = true;
+                            }
+
+                            if (isConsecutiveFail) {
+                                btnClasses += " bg-dashboard-danger border-dashboard-danger text-white node-active";
+                                iconHTML = `<i class="ph-bold ph-x text-base z-10 text-white"></i>`;
+                            } else {
+                                btnClasses += " bg-orange-100 border-dashboard-warning text-dashboard-warning node-active";
+                                iconHTML = `<i class="ph-bold ph-x text-base z-10 text-dashboard-warning"></i>`;
+                            }
+                        } else {
+                            btnClasses += " bg-emerald-50/40 border-emerald-100 hover:border-emerald-300 text-emerald-700";
+                            iconHTML = `<span class="${textClasses} text-emerald-700">${dayNum}</span>`;
+                        }
+                    }
+                }
+
+                html += `
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
+                        <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${habit.id}', '${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
+                            ${iconHTML}
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+                
+                <div class="mt-2 text-xs flex gap-4 text-dashboard-muted">
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-dashboard-success block"></span> Success</div>
+                    ${isGood 
+                        ? `<div class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-red-300 bg-red-50 block"></span> 2+ Days Skipped</div>`
+                        : `<div class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-dashboard-danger block"></span> 2+ Days Failed</div>
+                           <div class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-dashboard-warning bg-orange-100 block"></span> 1 Day Failed</div>`
+                    }
+                </div>
+            `;
+
+            Array.from(activeHabitContainer.children).forEach(child => {
+                if (child.id !== 'emptyTabsState') child.remove();
+            });
+
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            activeHabitContainer.appendChild(wrapper);
+
+            setTimeout(() => {
+                const grid = document.getElementById('gridContainer');
+                if (grid) grid.scrollLeft = grid.scrollWidth;
+            }, 10);
+        }
+
+        function renderMedications() {
+            renderMedicationTabs();
+            renderActiveMedication();
+        }
+
+        function renderMedicationTabs() {
+            medicationTabsContainer.innerHTML = '';
+            
+            const meds = getHabitsByType('medication');
+            if (meds.length === 0) return;
+
+            meds.forEach(med => {
+                const isActive = med.id === activeMedicationId;
+                const btn = document.createElement('button');
+                
+                btn.className = `px-5 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg transition-all flex items-center gap-2 ${
+                    isActive 
+                    ? 'bg-white text-dashboard-text shadow-[inset_0_-2px_0_0_#3b82f6] relative z-10' 
+                    : 'text-dashboard-muted hover:text-dashboard-text hover:bg-slate-100'
+                }`;
+                
+                btn.onclick = () => setActiveMedicationTab(med.id);
+                
+                const todayStr = formatDate(new Date());
+                const isCheckedToday = !!med.history[todayStr];
+                
+                const indicatorHTML = isCheckedToday 
+                    ? `<span class="w-2 h-2 rounded-full bg-blue-500"></span>`
+                    : `<span class="w-2 h-2 rounded-full bg-slate-200 border border-slate-300"></span>`;
+
+                btn.innerHTML = `${indicatorHTML}${escapeHTML(med.name)}`;
+                medicationTabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderActiveMedication() {
+            const meds = getHabitsByType('medication');
+            
+            if (!activeMedicationId || meds.length === 0) {
+                emptyMedicationState.style.display = 'flex';
+                Array.from(activeMedicationContainer.children).forEach(child => {
+                    if (child.id !== 'emptyMedicationState') child.remove();
+                });
+                return;
+            }
+
+            emptyMedicationState.style.display = 'none';
+            const med = meds.find(h => h.id === activeMedicationId);
+            if (!med) return;
+
+            const dates = getPastDates(DAYS_TO_SHOW);
+            const todayStr = formatDate(new Date());
+
+            let html = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h3 class="text-xl font-bold text-dashboard-text">${escapeHTML(med.name)}</h3>
+                    <button onclick="deleteHabit('${med.id}')" class="text-slate-400 hover:text-dashboard-danger hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 self-start sm:self-auto border border-transparent hover:border-red-100">
+                        <i class="ph ph-trash"></i> Delete
+                    </button>
+                </div>
+
+                <div class="mb-2 flex justify-between items-center text-xs font-semibold uppercase tracking-wider">
+                    <span class="text-dashboard-muted">Past ${DAYS_TO_SHOW} Days</span>
+                    <span class="text-slate-400">Created: ${med.createdAt}</span>
+                </div>
+
+                <div class="chain-container overflow-x-auto pb-4 -mx-2 px-2" id="grid-med-${med.id}">
+                    <div class="flex items-center gap-2 min-w-max h-16">
+            `;
+
+            dates.forEach((dateStr) => {
+                const isCompleted = !!med.history[dateStr];
+                const isBeforeCreation = dateStr < med.createdAt;
+                const d = new Date(dateStr + 'T12:00:00');
+                const dayNum = d.getDate();
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+                const isToday = dateStr === todayStr;
+
+                let btnClasses = "w-10 h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative group shadow-sm";
+                let textClasses = "text-[10px] font-bold z-10";
+                let iconHTML = '';
+
+                if (isBeforeCreation) {
+                    btnClasses += " bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed";
+                    textClasses += " text-slate-300";
+                    iconHTML = `<i class="ph ph-minus text-slate-300 z-10"></i>`;
+                } else {
+                    btnClasses += " cursor-pointer";
+                    if (isCompleted) {
+                        btnClasses += " bg-blue-500 border-blue-500 text-white node-active shadow-sm";
+                        iconHTML = `<i class="ph-bold ph-check text-base z-10 text-white"></i>`;
+                    } else {
+                        btnClasses += isToday 
+                            ? " bg-blue-50/50 border-blue-200 hover:border-blue-400 text-blue-700"
+                            : " bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500";
+                        iconHTML = `<span class="${textClasses}">${dayNum}</span>`;
+                    }
+                }
+
+                html += `
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-medium text-slate-400 uppercase">${dayName}</span>
+                        <button class="${btnClasses}" ${!isBeforeCreation ? `onclick="toggleDay('${med.id}', '${dateStr}')"` : ''} title="${d.toLocaleDateString()}">
+                            ${iconHTML}
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            Array.from(activeMedicationContainer.children).forEach(child => {
+                if (child.id !== 'emptyMedicationState') child.remove();
+            });
+
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            activeMedicationContainer.appendChild(wrapper);
+
+            setTimeout(() => {
+                const grid = document.getElementById(`grid-med-${med.id}`);
+                if (grid) grid.scrollLeft = grid.scrollWidth;
+            }, 10);
+        }
+
+        function renderAnalysis() {
+            if (habits.length === 0) {
+                analysisContent.innerHTML = `<div class="col-span-full text-center text-sm text-dashboard-muted py-6">Add a tracker to see analysis.</div>`;
+                return;
+            }
+
+            let goodHabitsCount = 0;
+            let badHabitsCount = 0;
+            let highestGoodStreak = 0;
+            let highestBadStreak = 0;
+            let totalGoodCompletions = 0;
+            let totalBadResisted = 0;
+
+            habits.forEach(h => {
+                if (h.type === 'medication') return;
+
+                const maxS = calculateMaxStreak(h);
+                
+                if (h.type === 'good') {
+                    goodHabitsCount++;
+                    totalGoodCompletions += Object.keys(h.history).length;
+                    if (maxS > highestGoodStreak) highestGoodStreak = maxS;
+                } else {
+                    badHabitsCount++;
+                    const start = new Date(h.createdAt);
+                    const end = new Date();
+                    start.setHours(0,0,0,0);
+                    end.setHours(0,0,0,0);
+                    const totalDays = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1);
+                    const failedDays = Object.keys(h.history).length;
+                    totalBadResisted += (totalDays - failedDays);
+                    
+                    if (maxS > highestBadStreak) highestBadStreak = maxS;
+                }
+            });
+
+            analysisContent.innerHTML = `
+                <div class="bg-white border border-dashboard-border p-4 rounded-xl flex flex-col justify-center items-center text-center shadow-sm">
+                    <span class="text-[10px] font-bold text-dashboard-muted uppercase tracking-widest mb-1">Good Habits Built</span>
+                    <span class
